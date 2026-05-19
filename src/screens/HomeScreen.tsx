@@ -28,6 +28,13 @@ export function HomeScreen({ navigation }: Props) {
             onPress={() => navigation.navigate('Wordle', { mode: { kind: 'daily' } })}
           />
         </View>
+        <View style={styles.row}>
+          <DailyCard
+            label="Mahjong"
+            sub="One layout a day"
+            onPress={() => navigation.navigate('Mahjong', { mode: { kind: 'daily' } })}
+          />
+        </View>
 
         <Text style={[styles.section, { color: colors.textMuted }]}>Practice</Text>
 
@@ -48,6 +55,16 @@ export function HomeScreen({ navigation }: Props) {
           <Text style={[styles.cardTitle, { color: colors.text }]}>Wordle</Text>
           <Text style={[styles.cardSub, { color: colors.textMuted }]}>
             5 letters · 6 guesses
+          </Text>
+        </Pressable>
+
+        <Pressable
+          onPress={() => navigation.navigate('Mahjong', { mode: { kind: 'random' } })}
+          style={[styles.card, { backgroundColor: colors.surfaceAlt, borderColor: colors.border }]}
+        >
+          <Text style={[styles.cardTitle, { color: colors.text }]}>Mahjong</Text>
+          <Text style={[styles.cardSub, { color: colors.textMuted }]}>
+            144 tiles · pyramid layout · solvable
           </Text>
         </Pressable>
 
