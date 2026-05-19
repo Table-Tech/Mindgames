@@ -30,6 +30,7 @@ import { maybeShowInterstitial } from '@/ads/interstitial';
 import { useEntitlements } from '@/iap/EntitlementsProvider';
 import { submitScore, todayISO } from '@/leaderboard/leaderboard';
 import { recordFinish } from '@/stats/stats';
+import { useFeedback } from '@/feedback/useFeedback';
 
 type NavMode =
   | { kind: 'random'; difficulty: Difficulty }
@@ -95,6 +96,7 @@ function freshState(
 export function SudokuScreen({ mode: navMode }: Props) {
   const { colors } = useTheme();
   const { adsRemoved } = useEntitlements();
+  const fb = useFeedback();
 
   const persistMode: PersistMode = useMemo(
     () => (navMode.kind === 'daily' ? { kind: 'daily' } : { kind: 'random' }),
@@ -259,10 +261,12 @@ export function SudokuScreen({ mode: navMode }: Props) {
     } else if (placing === state.solution[selected]) {
       nextWrong.delete(selected);
       nextScore += DIFFICULTY_POINTS[state.difficulty];
+      fb.correct();
     } else {
       nextWrong.add(selected);
       nextMistakes += 1;
       nextScore = Math.max(0, nextScore - MISTAKE_PENALTY);
+      fb.wrong();
     }
 
     let nextNotes = clearNotes(arraysToNotes(state.notes), selected);
@@ -272,6 +276,9 @@ export function SudokuScreen({ mode: navMode }: Props) {
 
     const lost = nextMistakes >= MAX_MISTAKES;
     const won = !lost && isComplete(nextBoard) && nextWrong.size === 0;
+
+    if (won) fb.win();
+    else if (lost) fb.lose();
 
     setState({
       ...state,

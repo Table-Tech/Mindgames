@@ -21,6 +21,7 @@ import { maybeShowInterstitial } from '@/ads/interstitial';
 import { useEntitlements } from '@/iap/EntitlementsProvider';
 import { submitScore, todayISO } from '@/leaderboard/leaderboard';
 import { recordFinish } from '@/stats/stats';
+import { useFeedback } from '@/feedback/useFeedback';
 
 interface Props {
   mode: WordleMode;
@@ -44,6 +45,7 @@ const newState = (mode: WordleMode): WordleState => ({
 export function WordleScreen({ mode }: Props) {
   const { colors } = useTheme();
   const { adsRemoved } = useEntitlements();
+  const fb = useFeedback();
 
   const [state, setState] = useState<WordleState | null>(null);
   const [toast, setToast] = useState<string | null>(null);
@@ -100,17 +102,20 @@ export function WordleScreen({ mode }: Props) {
       if (!state || state.outcome !== 'playing') return;
 
       if (k === 'BACK') {
+        fb.tap();
         setState(s => (s ? { ...s, current: s.current.slice(0, -1) } : s));
         return;
       }
 
       if (k === 'ENTER') {
         if (state.current.length < WORD_LENGTH) {
+          fb.wrong();
           showToast('Not enough letters');
           return;
         }
         const word = state.current.toLowerCase();
         if (!isValidWord(word)) {
+          fb.wrong();
           showToast('Not in word list');
           return;
         }
@@ -119,6 +124,9 @@ export function WordleScreen({ mode }: Props) {
         const guesses = [...state.guesses, guess];
         const solved = states.every(s => s === 'correct');
         const exhausted = !solved && guesses.length >= MAX_GUESSES;
+        if (solved) fb.win();
+        else if (exhausted) fb.lose();
+        else fb.correct();
         setState({
           ...state,
           guesses,
@@ -131,6 +139,7 @@ export function WordleScreen({ mode }: Props) {
 
       // Letter
       if (/^[a-z]$/.test(k) && state.current.length < WORD_LENGTH) {
+        fb.tap();
         setState(s => (s ? { ...s, current: s.current + k } : s));
       }
     },

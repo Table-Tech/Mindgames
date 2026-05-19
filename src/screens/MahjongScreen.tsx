@@ -27,6 +27,7 @@ import { maybeShowInterstitial } from '@/ads/interstitial';
 import { useEntitlements } from '@/iap/EntitlementsProvider';
 import { submitScore, todayISO } from '@/leaderboard/leaderboard';
 import { recordFinish } from '@/stats/stats';
+import { useFeedback } from '@/feedback/useFeedback';
 
 const STARTING_HINTS = 3;
 const STARTING_SHUFFLES = 2;
@@ -68,6 +69,7 @@ interface Snapshot {
 export function MahjongScreen({ mode }: Props) {
   const { colors } = useTheme();
   const { adsRemoved } = useEntitlements();
+  const fb = useFeedback();
 
   const [state, setState] = useState<MahjongState | null>(null);
   const [selectedId, setSelectedId] = useState<number | null>(null);
@@ -136,10 +138,12 @@ export function MahjongScreen({ mode }: Props) {
     (a: Tile, b: Tile) => {
       if (!state) return;
       if (a.group !== b.group) {
+        fb.wrong();
         setSelectedId(null);
         showToast('No match');
         return;
       }
+      fb.correct();
       pushSnapshot(state);
       const removed = new Set(state.removed);
       removed.add(a.id);
@@ -148,6 +152,8 @@ export function MahjongScreen({ mode }: Props) {
       const finishedAll = removed.size === state.tiles.length;
       const stuck = !finishedAll && isStuck(state.tiles, removed);
 
+      if (finishedAll) fb.win();
+      else if (stuck) fb.lose();
       const next: MahjongState = {
         ...state,
         removed,
