@@ -17,6 +17,7 @@ import { DifficultyPicker } from '@/games/sudoku/DifficultyPicker';
 import { dailyPuzzle, randomPuzzle } from '@/games/sudoku/generator';
 import { isComplete } from '@/games/sudoku/findConflicts';
 import { clearNotes, clearPeerNotes, emptyNotes, toggleNote, Notes } from '@/games/sudoku/notes';
+import { autoPencil } from '@/games/sudoku/autoPencil';
 import { DIFFICULTY_POINTS, type Board, type Difficulty } from '@/games/sudoku/types';
 import {
   clearSudoku,
@@ -373,6 +374,13 @@ export function SudokuScreen({ mode: navMode }: Props) {
     });
   };
 
+  const fillAutoPencil = () => {
+    if (!state || state.outcome !== 'playing' || state.paused) return;
+    pushSnapshot();
+    const next = autoPencil(state.board, i => isLocked(i));
+    setState({ ...state, notes: notesToArrays(next) });
+  };
+
   const togglePause = () => {
     if (!state || state.outcome !== 'playing') return;
     setState({ ...state, paused: !state.paused });
@@ -501,6 +509,11 @@ export function SudokuScreen({ mode: navMode }: Props) {
             badge={state.hintsLeft}
             disabled={state.hintsLeft === 0}
             onPress={useHint}
+          />
+          <ActionButton
+            icon="sparkles-outline"
+            label="Auto"
+            onPress={fillAutoPencil}
           />
         </View>
 
@@ -650,15 +663,16 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     borderRadius: 4,
   },
-  actionRow: { flexDirection: 'row', justifyContent: 'space-around' },
+  actionRow: { flexDirection: 'row', gap: 6 },
   actionBtn: {
-    width: 64,
+    flex: 1,
     height: 56,
     borderRadius: 12,
     alignItems: 'center',
     justifyContent: 'center',
     borderWidth: StyleSheet.hairlineWidth,
     position: 'relative',
+    minWidth: 0,
   },
   badge: {
     position: 'absolute',
