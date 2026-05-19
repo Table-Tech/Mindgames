@@ -1,53 +1,278 @@
-import React from 'react';
-import { Alert, Pressable, StyleSheet, Text, View } from 'react-native';
+import React, { useState } from 'react';
+import {
+  Alert,
+  Pressable,
+  ScrollView,
+  StyleSheet,
+  Switch,
+  Text,
+  TextInput,
+  View,
+} from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useTheme } from '@/theme/ThemeProvider';
 import { useEntitlements } from '@/iap/EntitlementsProvider';
+import { usePreferences, type ThemeMode } from '@/prefs/PreferencesProvider';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 export function SettingsScreen() {
   const { colors } = useTheme();
   const { adsRemoved, purchaseRemoveAds, restorePurchases } = useEntitlements();
+  const { prefs, setPref, resetPrefs } = usePreferences();
+  const [nameDraft, setNameDraft] = useState(prefs.playerName);
+
+  const themeOptions: { value: ThemeMode; label: string }[] = [
+    { value: 'system', label: 'Auto' },
+    { value: 'light', label: 'Light' },
+    { value: 'dark', label: 'Dark' },
+  ];
+
+  const clearProgress = () => {
+    Alert.alert(
+      'Clear all progress',
+      'This deletes all in-progress games, stats, leaderboards, and preferences on this device. Continue?',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Clear',
+          style: 'destructive',
+          onPress: async () => {
+            await AsyncStorage.clear();
+            resetPrefs();
+            Alert.alert('Cleared', 'All local data has been removed.');
+          },
+        },
+      ],
+    );
+  };
+
+  const clearStats = async () => {
+    Alert.alert('Clear statistics', 'Reset all play stats and streaks?', [
+      { text: 'Cancel', style: 'cancel' },
+      {
+        text: 'Clear',
+        style: 'destructive',
+        onPress: async () => {
+          await AsyncStorage.multiRemove(['stats.records.v1', 'sudoku.daily.leaderboard.v1']);
+          Alert.alert('Done', 'Statistics cleared.');
+        },
+      },
+    ]);
+  };
 
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
-      <Text style={[styles.title, { color: colors.text }]}>Settings</Text>
+      <ScrollView contentContainerStyle={styles.scroll}>
+        <Text style={[styles.title, { color: colors.text }]}>Settings</Text>
 
-      <View style={[styles.card, { backgroundColor: colors.surface, borderColor: colors.border }]}>
-        <Text style={[styles.cardTitle, { color: colors.text }]}>Remove ads</Text>
-        <Text style={{ color: colors.textMuted, marginBottom: 12 }}>
-          One-time purchase · €2.99
-        </Text>
-        {adsRemoved ? (
-          <Text style={{ color: colors.accent }}>Purchased — thanks!</Text>
-        ) : (
-          <Pressable
-            onPress={async () => {
-              await purchaseRemoveAds();
-              Alert.alert('Thank you!', 'Ads have been removed.');
-            }}
-            style={[styles.btn, { backgroundColor: colors.accent }]}
-          >
-            <Text style={{ color: '#fff', fontWeight: '600' }}>Buy · €2.99</Text>
+        <Section title="Appearance">
+          <Row label="Theme">
+            <View style={styles.segmented}>
+              {themeOptions.map(opt => {
+                const active = prefs.themeMode === opt.value;
+                return (
+                  <Pressable
+                    key={opt.value}
+                    onPress={() => setPref('themeMode', opt.value)}
+                    style={[
+                      styles.segment,
+                      {
+                        backgroundColor: active ? colors.accent : 'transparent',
+                        borderColor: colors.border,
+                      },
+                    ]}
+                  >
+                    <Text style={{ color: active ? '#fff' : colors.text }}>{opt.label}</Text>
+                  </Pressable>
+                );
+              })}
+            </View>
+          </Row>
+        </Section>
+
+        <Section title="Feedback">
+          <SwitchRow
+            label="Sound effects"
+            value={prefs.soundEnabled}
+            onChange={v => setPref('soundEnabled', v)}
+          />
+          <SwitchRow
+            label="Haptic feedback"
+            value={prefs.hapticsEnabled}
+            onChange={v => setPref('hapticsEnabled', v)}
+          />
+        </Section>
+
+        <Section title="Sudoku">
+          <SwitchRow
+            label="Auto-clear notes when placing a value"
+            value={prefs.sudokuAutoCleanupNotes}
+            onChange={v => setPref('sudokuAutoCleanupNotes', v)}
+          />
+          <SwitchRow
+            label="Highlight mistakes in red"
+            value={prefs.sudokuHighlightMistakes}
+            onChange={v => setPref('sudokuHighlightMistakes', v)}
+          />
+        </Section>
+
+        <Section title="Wordle">
+          <SwitchRow
+            label="Hard mode (revealed hints must be used)"
+            value={prefs.wordleHardMode}
+            onChange={v => setPref('wordleHardMode', v)}
+          />
+        </Section>
+
+        <Section title="Daily reminder">
+          <SwitchRow
+            label="Notify me when a new daily is available"
+            value={prefs.dailyReminderEnabled}
+            onChange={v => setPref('dailyReminderEnabled', v)}
+          />
+          {prefs.dailyReminderEnabled && (
+            <Row label="Time">
+              <Text style={[styles.timeValue, { color: colors.text }]}>
+                {prefs.dailyReminderHour.toString().padStart(2, '0')}:
+                {prefs.dailyReminderMinute.toString().padStart(2, '0')}
+              </Text>
+            </Row>
+          )}
+        </Section>
+
+        <Section title="Profile">
+          <Row label="Leaderboard name">
+            <TextInput
+              value={nameDraft}
+              onChangeText={setNameDraft}
+              onBlur={() => setPref('playerName', nameDraft.trim())}
+              placeholder="Anon"
+              placeholderTextColor={colors.textMuted}
+              style={[
+                styles.input,
+                {
+                  color: colors.text,
+                  borderColor: colors.border,
+                  backgroundColor: colors.surface,
+                },
+              ]}
+              maxLength={16}
+            />
+          </Row>
+        </Section>
+
+        <Section title="Purchases">
+          {adsRemoved ? (
+            <Text style={{ color: colors.accent, paddingVertical: 8 }}>
+              Ads removed — thanks for the support.
+            </Text>
+          ) : (
+            <Pressable
+              onPress={async () => {
+                await purchaseRemoveAds();
+                Alert.alert('Thank you!', 'Ads have been removed.');
+              }}
+              style={[styles.bigBtn, { backgroundColor: colors.accent }]}
+            >
+              <Text style={{ color: '#fff', fontWeight: '700' }}>Remove ads · €2.99</Text>
+            </Pressable>
+          )}
+          <Pressable onPress={restorePurchases} style={styles.linkRow}>
+            <Text style={{ color: colors.textMuted }}>Restore purchases</Text>
           </Pressable>
-        )}
-        <Pressable onPress={restorePurchases} style={styles.linkRow}>
-          <Text style={{ color: colors.textMuted }}>Restore purchases</Text>
-        </Pressable>
-      </View>
+        </Section>
 
-      <Text style={[styles.note, { color: colors.textMuted }]}>
-        Theme follows your system (light/dark).
-      </Text>
+        <Section title="Data" danger>
+          <Pressable
+            onPress={clearStats}
+            style={[styles.bigBtn, { backgroundColor: 'transparent', borderColor: colors.border, borderWidth: StyleSheet.hairlineWidth }]}
+          >
+            <Text style={{ color: colors.text }}>Clear statistics</Text>
+          </Pressable>
+          <Pressable
+            onPress={clearProgress}
+            style={[styles.bigBtn, { backgroundColor: 'transparent', borderColor: colors.error, borderWidth: StyleSheet.hairlineWidth }]}
+          >
+            <Text style={{ color: colors.error }}>Clear all data</Text>
+          </Pressable>
+        </Section>
+
+        <Text style={[styles.version, { color: colors.textMuted }]}>Mindgames · v0.1.0</Text>
+      </ScrollView>
     </SafeAreaView>
   );
 }
 
+function Section({ title, children }: { title: string; children: React.ReactNode; danger?: boolean }) {
+  const { colors } = useTheme();
+  return (
+    <View style={styles.section}>
+      <Text style={[styles.sectionTitle, { color: colors.textMuted }]}>{title}</Text>
+      <View style={[styles.sectionBody, { backgroundColor: colors.surface, borderColor: colors.border }]}>
+        {children}
+      </View>
+    </View>
+  );
+}
+
+function Row({ label, children }: { label: string; children: React.ReactNode }) {
+  const { colors } = useTheme();
+  return (
+    <View style={styles.row}>
+      <Text style={{ color: colors.text, flex: 1 }}>{label}</Text>
+      {children}
+    </View>
+  );
+}
+
+function SwitchRow({ label, value, onChange }: { label: string; value: boolean; onChange: (v: boolean) => void }) {
+  return (
+    <Row label={label}>
+      <Switch value={value} onValueChange={onChange} />
+    </Row>
+  );
+}
+
 const styles = StyleSheet.create({
-  container: { flex: 1, padding: 16, gap: 16 },
-  title: { fontSize: 24, fontWeight: '700' },
-  card: { padding: 16, borderRadius: 12, borderWidth: StyleSheet.hairlineWidth },
-  cardTitle: { fontSize: 18, fontWeight: '600', marginBottom: 4 },
-  btn: { paddingVertical: 12, alignItems: 'center', borderRadius: 8 },
-  linkRow: { paddingVertical: 12, alignItems: 'center' },
-  note: { fontSize: 12, textAlign: 'center' },
+  container: { flex: 1 },
+  scroll: { padding: 16, gap: 18 },
+  title: { fontSize: 28, fontWeight: '800' },
+  section: { gap: 6 },
+  sectionTitle: { fontSize: 12, letterSpacing: 0.6, textTransform: 'uppercase', paddingHorizontal: 4 },
+  sectionBody: {
+    borderRadius: 12,
+    borderWidth: StyleSheet.hairlineWidth,
+    overflow: 'hidden',
+  },
+  row: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 14,
+    paddingVertical: 12,
+    gap: 12,
+  },
+  segmented: { flexDirection: 'row', gap: 4 },
+  segment: {
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 6,
+    borderWidth: StyleSheet.hairlineWidth,
+  },
+  timeValue: { fontSize: 16, fontWeight: '600', fontVariant: ['tabular-nums'] },
+  input: {
+    minWidth: 120,
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderRadius: 6,
+    borderWidth: StyleSheet.hairlineWidth,
+  },
+  bigBtn: {
+    margin: 12,
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    borderRadius: 8,
+    alignItems: 'center',
+  },
+  linkRow: { alignItems: 'center', paddingVertical: 10 },
+  version: { textAlign: 'center', fontSize: 12, marginTop: 12 },
 });
