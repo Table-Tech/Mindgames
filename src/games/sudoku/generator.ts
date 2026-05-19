@@ -26,10 +26,12 @@ function fillFullBoard(rand: () => number): Board {
 }
 
 const TARGET_CLUES: Record<Difficulty, number> = {
-  easy: 40,
-  medium: 32,
-  hard: 28,
-  expert: 24,
+  easy: 42,
+  medium: 34,
+  hard: 30,
+  expert: 26,
+  master: 24,
+  extreme: 22,
 };
 
 function digHoles(solution: Board, difficulty: Difficulty, rand: () => number): Board {

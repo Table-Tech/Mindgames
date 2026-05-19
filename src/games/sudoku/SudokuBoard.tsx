@@ -10,11 +10,12 @@ interface Props {
   given: Board;
   notes: NotesBoard;
   selected: number | null;
-  conflicts: Set<number>;
+  wrong: Set<number>;
+  hidden?: boolean;
   onSelect: (index: number) => void;
 }
 
-export function SudokuBoard({ board, given, notes, selected, conflicts, onSelect }: Props) {
+export function SudokuBoard({ board, given, notes, selected, wrong, hidden, onSelect }: Props) {
   const { colors } = useTheme();
   const selectedVal = selected != null ? board[selected] : 0;
   const selRow = selected != null ? Math.floor(selected / 9) : -1;
@@ -34,7 +35,7 @@ export function SudokuBoard({ board, given, notes, selected, conflicts, onSelect
               !isSelected &&
               (r === selRow || c === selCol || Math.floor(r / 3) * 3 + Math.floor(c / 3) === selBox);
             const sameNumber = !isSelected && val !== 0 && val === selectedVal;
-            const isConflict = conflicts.has(i);
+            const isWrong = wrong.has(i);
 
             let bg = colors.surface;
             if (isGiven) bg = colors.given;
@@ -62,12 +63,12 @@ export function SudokuBoard({ board, given, notes, selected, conflicts, onSelect
                   },
                 ]}
               >
-                {val !== 0 ? (
+                {hidden ? null : val !== 0 ? (
                   <Text
                     style={{
                       fontSize: 22,
                       fontWeight: isGiven ? '700' : '500',
-                      color: isConflict ? colors.error : isGiven ? colors.text : colors.accent,
+                      color: isWrong ? colors.error : isGiven ? colors.text : colors.accent,
                     }}
                   >
                     {val}
