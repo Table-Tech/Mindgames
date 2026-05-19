@@ -1,5 +1,5 @@
 import React from 'react';
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { useTheme } from '@/theme/ThemeProvider';
@@ -12,32 +12,46 @@ export function HomeScreen({ navigation }: Props) {
   const { colors } = useTheme();
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
-      <View style={styles.body}>
+      <ScrollView contentContainerStyle={styles.body}>
         <Text style={[styles.title, { color: colors.text }]}>Mindgames</Text>
-        <Text style={[styles.subtitle, { color: colors.textMuted }]}>Pick a mode</Text>
+
+        <Text style={[styles.section, { color: colors.textMuted }]}>Daily challenges</Text>
+        <View style={styles.row}>
+          <DailyCard
+            label="Sudoku"
+            sub="One puzzle a day"
+            onPress={() => navigation.navigate('Sudoku', { mode: { kind: 'daily' } })}
+          />
+          <DailyCard
+            label="Wordle"
+            sub="One word a day"
+            onPress={() => navigation.navigate('Wordle', { mode: { kind: 'daily' } })}
+          />
+        </View>
+
+        <Text style={[styles.section, { color: colors.textMuted }]}>Practice</Text>
 
         <Pressable
-          onPress={() => navigation.navigate('Sudoku', { mode: { kind: 'daily' } })}
-          style={[styles.card, { backgroundColor: colors.accent }]}
+          onPress={() => navigation.navigate('Sudoku', { mode: { kind: 'random', difficulty: 'medium' } })}
+          style={[styles.card, { backgroundColor: colors.surfaceAlt, borderColor: colors.border }]}
         >
-          <Text style={[styles.cardTitle, { color: '#fff' }]}>Daily Challenge</Text>
-          <Text style={[styles.cardSub, { color: '#ffffffcc' }]}>One puzzle, leaderboard</Text>
+          <Text style={[styles.cardTitle, { color: colors.text }]}>Sudoku</Text>
+          <Text style={[styles.cardSub, { color: colors.textMuted }]}>
+            6 difficulties · hints · undo
+          </Text>
         </Pressable>
 
-        {(['easy', 'medium', 'hard', 'expert'] as const).map(d => (
-          <Pressable
-            key={d}
-            onPress={() => navigation.navigate('Sudoku', { mode: { kind: 'random', difficulty: d } })}
-            style={[styles.card, { backgroundColor: colors.surfaceAlt, borderColor: colors.border }]}
-          >
-            <Text style={[styles.cardTitle, { color: colors.text }]}>
-              {d[0].toUpperCase() + d.slice(1)}
-            </Text>
-            <Text style={[styles.cardSub, { color: colors.textMuted }]}>Endless practice</Text>
-          </Pressable>
-        ))}
+        <Pressable
+          onPress={() => navigation.navigate('Wordle', { mode: { kind: 'random' } })}
+          style={[styles.card, { backgroundColor: colors.surfaceAlt, borderColor: colors.border }]}
+        >
+          <Text style={[styles.cardTitle, { color: colors.text }]}>Wordle</Text>
+          <Text style={[styles.cardSub, { color: colors.textMuted }]}>
+            5 letters · 6 guesses
+          </Text>
+        </Pressable>
 
-        <View style={styles.row}>
+        <View style={styles.bottomRow}>
           <Pressable
             onPress={() => navigation.navigate('Leaderboard')}
             style={[styles.linkBtn, { borderColor: colors.border }]}
@@ -51,17 +65,29 @@ export function HomeScreen({ navigation }: Props) {
             <Text style={{ color: colors.text }}>Settings</Text>
           </Pressable>
         </View>
-      </View>
+      </ScrollView>
       <AdBanner />
     </SafeAreaView>
   );
 }
 
+function DailyCard({ label, sub, onPress }: { label: string; sub: string; onPress: () => void }) {
+  const { colors } = useTheme();
+  return (
+    <Pressable onPress={onPress} style={[styles.dailyCard, { backgroundColor: colors.accent }]}>
+      <Text style={[styles.cardTitle, { color: '#fff' }]}>{label}</Text>
+      <Text style={[styles.cardSub, { color: '#ffffffcc' }]}>{sub}</Text>
+    </Pressable>
+  );
+}
+
 const styles = StyleSheet.create({
   container: { flex: 1 },
-  body: { flex: 1, padding: 20, gap: 12 },
-  title: { fontSize: 32, fontWeight: '800', marginTop: 12 },
-  subtitle: { fontSize: 14, marginBottom: 8 },
+  body: { padding: 20, gap: 12 },
+  title: { fontSize: 32, fontWeight: '800', marginBottom: 4 },
+  section: { fontSize: 13, marginTop: 12, textTransform: 'uppercase', letterSpacing: 0.5 },
+  row: { flexDirection: 'row', gap: 12 },
+  dailyCard: { flex: 1, borderRadius: 12, padding: 16 },
   card: {
     borderRadius: 12,
     padding: 16,
@@ -69,7 +95,7 @@ const styles = StyleSheet.create({
   },
   cardTitle: { fontSize: 18, fontWeight: '700' },
   cardSub: { fontSize: 13, marginTop: 2 },
-  row: { flexDirection: 'row', gap: 12, marginTop: 'auto' },
+  bottomRow: { flexDirection: 'row', gap: 12, marginTop: 16 },
   linkBtn: {
     flex: 1,
     paddingVertical: 12,

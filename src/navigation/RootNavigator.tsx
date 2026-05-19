@@ -4,6 +4,7 @@ import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { useTheme } from '@/theme/ThemeProvider';
 import { HomeScreen } from '@/screens/HomeScreen';
 import { SudokuScreen } from '@/screens/SudokuScreen';
+import { WordleScreen } from '@/screens/WordleScreen';
 import { LeaderboardScreen } from '@/screens/LeaderboardScreen';
 import { SettingsScreen } from '@/screens/SettingsScreen';
 import type { RootStackParamList } from './types';
@@ -32,6 +33,12 @@ export function RootNavigator() {
           options={{ title: 'Sudoku' }}
         >
           {({ route }) => <SudokuScreen mode={route.params.mode} />}
+        </Stack.Screen>
+        <Stack.Screen
+          name="Wordle"
+          options={{ title: 'Wordle' }}
+        >
+          {({ route }) => <WordleScreen mode={route.params.mode} />}
         </Stack.Screen>
         <Stack.Screen name="Leaderboard" component={LeaderboardScreen} options={{ title: 'Leaderboard' }} />
         <Stack.Screen name="Settings" component={SettingsScreen} options={{ title: 'Settings' }} />
