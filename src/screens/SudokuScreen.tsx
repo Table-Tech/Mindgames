@@ -1,5 +1,6 @@
-import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import {
+  ActivityIndicator,
   Alert,
   Platform,
   Pressable,
@@ -16,16 +17,25 @@ import { DifficultyPicker } from '@/games/sudoku/DifficultyPicker';
 import { dailyPuzzle, randomPuzzle } from '@/games/sudoku/generator';
 import { isComplete } from '@/games/sudoku/findConflicts';
 import { clearNotes, clearPeerNotes, emptyNotes, toggleNote, Notes } from '@/games/sudoku/notes';
-import { DIFFICULTY_POINTS, type Board, type Difficulty, type Puzzle } from '@/games/sudoku/types';
+import { DIFFICULTY_POINTS, type Board, type Difficulty } from '@/games/sudoku/types';
+import {
+  clearSudoku,
+  loadSudoku,
+  saveSudoku,
+  type SudokuMode as PersistMode,
+  type SudokuPersistedState,
+} from '@/games/sudoku/persistence';
 import { AdBanner } from '@/ads/AdBanner';
 import { maybeShowInterstitial } from '@/ads/interstitial';
 import { useEntitlements } from '@/iap/EntitlementsProvider';
 import { submitScore, todayISO } from '@/leaderboard/leaderboard';
 
-type Mode = { kind: 'random'; difficulty: Difficulty } | { kind: 'daily' };
+type NavMode =
+  | { kind: 'random'; difficulty: Difficulty }
+  | { kind: 'daily' };
 
 interface Props {
-  mode: Mode;
+  mode: NavMode;
 }
 
 const MAX_MISTAKES = 3;
@@ -49,271 +59,343 @@ function formatTime(ms: number) {
   return `${m.toString().padStart(2, '0')}:${(s % 60).toString().padStart(2, '0')}`;
 }
 
-export function SudokuScreen({ mode }: Props) {
+function notesToArrays(notes: Notes): number[][] {
+  return notes.map(s => Array.from(s));
+}
+function arraysToNotes(arr: number[][]): Notes {
+  return arr.map(a => new Set(a));
+}
+
+function freshState(
+  navMode: NavMode,
+  difficultyOverride?: Difficulty,
+): SudokuPersistedState {
+  const difficulty =
+    difficultyOverride ?? (navMode.kind === 'random' ? navMode.difficulty : 'medium');
+  const puzzle = navMode.kind === 'daily' ? dailyPuzzle() : randomPuzzle(difficulty);
+  return {
+    difficulty: puzzle.difficulty,
+    given: puzzle.given.slice(),
+    solution: puzzle.solution.slice(),
+    seed: puzzle.seed,
+    board: puzzle.given.slice(),
+    notes: Array.from({ length: 81 }, () => []),
+    hintLocked: [],
+    wrong: [],
+    mistakes: 0,
+    hintsLeft: STARTING_HINTS,
+    score: 0,
+    elapsedMs: 0,
+    paused: false,
+    outcome: 'playing',
+  };
+}
+
+export function SudokuScreen({ mode: navMode }: Props) {
   const { colors } = useTheme();
   const { adsRemoved } = useEntitlements();
 
-  const isDaily = mode.kind === 'daily';
-  const [difficulty, setDifficulty] = useState<Difficulty>(
-    mode.kind === 'random' ? mode.difficulty : 'medium',
+  const persistMode: PersistMode = useMemo(
+    () => (navMode.kind === 'daily' ? { kind: 'daily' } : { kind: 'random' }),
+    [navMode.kind],
   );
 
-  // Bumping `gameId` regenerates the puzzle (new seed) without changing difficulty.
-  const [gameId, setGameId] = useState(0);
-
-  const puzzle = useMemo<Puzzle>(
-    () => (isDaily ? dailyPuzzle() : randomPuzzle(difficulty)),
-    [isDaily, difficulty, gameId],
-  );
-
-  const [board, setBoard] = useState<Board>(() => puzzle.given.slice());
-  const [notes, setNotes] = useState<Notes>(() => emptyNotes());
-  const [hintLocked, setHintLocked] = useState<Set<number>>(() => new Set());
-  const [wrong, setWrong] = useState<Set<number>>(() => new Set());
+  const [state, setState] = useState<SudokuPersistedState | null>(null);
+  const [loading, setLoading] = useState(true);
   const [history, setHistory] = useState<Snapshot[]>([]);
-
   const [notesMode, setNotesMode] = useState(false);
   const [selected, setSelected] = useState<number | null>(null);
-  const [mistakes, setMistakes] = useState(0);
-  const [hintsLeft, setHintsLeft] = useState(STARTING_HINTS);
-  const [score, setScore] = useState(0);
+  const [finishHandled, setFinishHandled] = useState(false);
 
-  const [elapsed, setElapsed] = useState(0);
-  const [paused, setPaused] = useState(false);
-  const [done, setDone] = useState(false);
-  const [gameOver, setGameOver] = useState(false);
-  const startedAt = useRef(Date.now());
-  const pausedAt = useRef<number | null>(null);
-
-  // Reset all game state when the puzzle changes.
+  // Load or generate.
   useEffect(() => {
-    setBoard(puzzle.given.slice());
-    setNotes(emptyNotes());
-    setHintLocked(new Set());
-    setWrong(new Set());
-    setHistory([]);
-    setSelected(null);
-    setMistakes(0);
-    setHintsLeft(STARTING_HINTS);
-    setScore(0);
-    setElapsed(0);
-    setPaused(false);
-    setDone(false);
-    setGameOver(false);
-    startedAt.current = Date.now();
-    pausedAt.current = null;
-  }, [puzzle]);
+    let cancelled = false;
+    (async () => {
+      setLoading(true);
+      const saved = await loadSudoku(persistMode);
+      if (cancelled) return;
+      if (saved) {
+        setState(saved);
+        setFinishHandled(saved.outcome !== 'playing');
+      } else {
+        // Generation can take a moment for Master/Extreme — yield first so the
+        // loading indicator renders.
+        await new Promise(resolve => setTimeout(resolve, 0));
+        if (cancelled) return;
+        setState(freshState(navMode));
+        setFinishHandled(false);
+      }
+      setHistory([]);
+      setSelected(null);
+      setNotesMode(false);
+      setLoading(false);
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [navMode, persistMode]);
 
-  // Timer
+  // Persist every change.
   useEffect(() => {
-    if (done || gameOver || paused) return;
-    const t = setInterval(() => setElapsed(Date.now() - startedAt.current), 1000);
+    if (!state) return;
+    saveSudoku(persistMode, state);
+  }, [state, persistMode]);
+
+  // Timer (only ticks while playing and not paused).
+  useEffect(() => {
+    if (!state || state.outcome !== 'playing' || state.paused) return;
+    const t = setInterval(() => {
+      setState(s => (s ? { ...s, elapsedMs: s.elapsedMs + 1000 } : s));
+    }, 1000);
     return () => clearInterval(t);
-  }, [done, gameOver, paused]);
+  }, [state?.outcome, state?.paused, !!state]);
+
+  const wrongSet = useMemo(() => new Set(state?.wrong ?? []), [state?.wrong]);
+  const hintLockedSet = useMemo(
+    () => new Set(state?.hintLocked ?? []),
+    [state?.hintLocked],
+  );
+  const notes = useMemo(
+    () => (state ? arraysToNotes(state.notes) : emptyNotes()),
+    [state?.notes],
+  );
 
   const isLocked = useCallback(
-    (i: number) => puzzle.given[i] !== 0 || hintLocked.has(i),
-    [puzzle.given, hintLocked],
+    (i: number) => !!state && (state.given[i] !== 0 || hintLockedSet.has(i)),
+    [state, hintLockedSet],
   );
 
   const pushSnapshot = useCallback(() => {
+    if (!state) return;
     setHistory(h => [
       ...h,
       {
-        board,
-        notes,
-        wrong: new Set(wrong),
-        hintLocked: new Set(hintLocked),
-        mistakes,
-        hintsLeft,
-        score,
+        board: state.board.slice(),
+        notes: arraysToNotes(state.notes),
+        wrong: new Set(state.wrong),
+        hintLocked: new Set(state.hintLocked),
+        mistakes: state.mistakes,
+        hintsLeft: state.hintsLeft,
+        score: state.score,
       },
     ]);
-  }, [board, notes, wrong, hintLocked, mistakes, hintsLeft, score]);
+  }, [state]);
 
   const finish = useCallback(
-    async (finalBoard: Board) => {
-      const correct = finalBoard.every((v, i) => v === puzzle.solution[i]);
-      if (!correct) return;
-      const timeMs = Date.now() - startedAt.current;
-      setDone(true);
-
+    async (finalScore: number, finalElapsed: number, won: boolean) => {
       const shouldInterstitial = await maybeShowInterstitial(adsRemoved);
       if (shouldInterstitial) Alert.alert('Ad', '(Interstitial would show here)');
 
-      if (isDaily) {
-        const record = async (name: string) => {
-          await submitScore({ name: name || 'Anon', timeMs, date: todayISO() });
-        };
+      if (!won) {
+        Alert.alert('Game over', `You made ${MAX_MISTAKES} mistakes.`);
+        return;
+      }
+
+      if (navMode.kind === 'daily') {
+        const record = async (name: string) =>
+          submitScore({ name: name || 'Anon', timeMs: finalElapsed, date: todayISO() });
         if (Platform.OS === 'ios') {
           Alert.prompt(
             'Daily challenge solved!',
-            `Time: ${formatTime(timeMs)}\nScore: ${score}\nEnter your name for the leaderboard`,
+            `Time: ${formatTime(finalElapsed)}\nScore: ${finalScore}`,
             (name?: string) => record(name ?? ''),
           );
         } else {
-          Alert.alert(
-            'Daily challenge solved!',
-            `Time: ${formatTime(timeMs)}\nScore: ${score}`,
-          );
+          Alert.alert('Daily challenge solved!', `Time: ${formatTime(finalElapsed)}\nScore: ${finalScore}`);
           record('Anon');
         }
       } else {
-        Alert.alert('Solved!', `Time: ${formatTime(timeMs)}\nScore: ${score}`);
+        Alert.alert('Solved!', `Time: ${formatTime(finalElapsed)}\nScore: ${finalScore}`);
       }
     },
-    [puzzle.solution, adsRemoved, isDaily, score],
+    [adsRemoved, navMode.kind],
   );
 
+  // Trigger finish-side-effects once when game ends.
+  useEffect(() => {
+    if (!state || state.outcome === 'playing' || finishHandled) return;
+    setFinishHandled(true);
+    finish(state.score, state.elapsedMs, state.outcome === 'won');
+  }, [state, finishHandled, finish]);
+
   const inputNumber = (n: number) => {
-    if (selected == null || done || gameOver || paused) return;
+    if (!state || state.outcome !== 'playing' || state.paused) return;
+    if (selected == null) return;
     if (isLocked(selected)) return;
 
     if (notesMode && n !== 0) {
-      if (board[selected] !== 0) return;
-      setNotes(toggleNote(notes, selected, n));
+      if (state.board[selected] !== 0) return;
+      const nextNotes = toggleNote(arraysToNotes(state.notes), selected, n);
+      pushSnapshot();
+      setState({ ...state, notes: notesToArrays(nextNotes) });
       return;
     }
 
     pushSnapshot();
 
-    const current = board[selected];
+    const current = state.board[selected];
     const placing = current === n ? 0 : n;
 
-    const nextBoard = board.slice();
+    const nextBoard = state.board.slice();
     nextBoard[selected] = placing;
 
-    const nextWrong = new Set(wrong);
-    let nextMistakes = mistakes;
-    let nextScore = score;
+    const nextWrong = new Set(state.wrong);
+    let nextMistakes = state.mistakes;
+    let nextScore = state.score;
 
     if (placing === 0) {
       nextWrong.delete(selected);
-    } else if (placing === puzzle.solution[selected]) {
+    } else if (placing === state.solution[selected]) {
       nextWrong.delete(selected);
-      nextScore += DIFFICULTY_POINTS[difficulty];
+      nextScore += DIFFICULTY_POINTS[state.difficulty];
     } else {
       nextWrong.add(selected);
       nextMistakes += 1;
       nextScore = Math.max(0, nextScore - MISTAKE_PENALTY);
     }
 
-    let nextNotes = clearNotes(notes, selected);
-    if (placing !== 0 && placing === puzzle.solution[selected]) {
+    let nextNotes = clearNotes(arraysToNotes(state.notes), selected);
+    if (placing !== 0 && placing === state.solution[selected]) {
       nextNotes = clearPeerNotes(nextNotes, selected, placing);
     }
 
-    setBoard(nextBoard);
-    setNotes(nextNotes);
-    setWrong(nextWrong);
-    setMistakes(nextMistakes);
-    setScore(nextScore);
+    const lost = nextMistakes >= MAX_MISTAKES;
+    const won = !lost && isComplete(nextBoard) && nextWrong.size === 0;
 
-    if (nextMistakes >= MAX_MISTAKES) {
-      setGameOver(true);
-      Alert.alert('Game over', `You made ${MAX_MISTAKES} mistakes.`, [
-        { text: 'New game', onPress: () => setGameId(g => g + 1) },
-        { text: 'OK' },
-      ]);
-      return;
-    }
-
-    if (isComplete(nextBoard) && nextWrong.size === 0) finish(nextBoard);
+    setState({
+      ...state,
+      board: nextBoard,
+      notes: notesToArrays(nextNotes),
+      wrong: Array.from(nextWrong),
+      mistakes: nextMistakes,
+      score: nextScore,
+      outcome: lost ? 'lost' : won ? 'won' : 'playing',
+    });
   };
 
   const erase = () => {
-    if (selected == null || done || gameOver || paused) return;
+    if (!state || state.outcome !== 'playing' || state.paused) return;
+    if (selected == null) return;
     if (isLocked(selected)) return;
-    if (board[selected] === 0 && notes[selected].size === 0) return;
+    if (state.board[selected] === 0 && state.notes[selected].length === 0) return;
+
     pushSnapshot();
-    if (board[selected] !== 0) {
-      const next = board.slice();
+
+    if (state.board[selected] !== 0) {
+      const next = state.board.slice();
       next[selected] = 0;
-      setBoard(next);
-      if (wrong.has(selected)) {
-        const w = new Set(wrong);
-        w.delete(selected);
-        setWrong(w);
-      }
+      const nextWrong = new Set(state.wrong);
+      nextWrong.delete(selected);
+      setState({
+        ...state,
+        board: next,
+        wrong: Array.from(nextWrong),
+      });
     } else {
-      setNotes(clearNotes(notes, selected));
+      const nextNotes = clearNotes(arraysToNotes(state.notes), selected);
+      setState({ ...state, notes: notesToArrays(nextNotes) });
     }
   };
 
   const undo = () => {
-    if (done || gameOver) return;
+    if (!state || state.outcome !== 'playing') return;
     const last = history[history.length - 1];
     if (!last) return;
     setHistory(h => h.slice(0, -1));
-    setBoard(last.board);
-    setNotes(last.notes);
-    setWrong(last.wrong);
-    setHintLocked(last.hintLocked);
-    setMistakes(last.mistakes);
-    setHintsLeft(last.hintsLeft);
-    setScore(last.score);
+    setState({
+      ...state,
+      board: last.board,
+      notes: notesToArrays(last.notes),
+      wrong: Array.from(last.wrong),
+      hintLocked: Array.from(last.hintLocked),
+      mistakes: last.mistakes,
+      hintsLeft: last.hintsLeft,
+      score: last.score,
+    });
   };
 
   const useHint = () => {
-    if (selected == null || done || gameOver || paused) return;
-    if (hintsLeft <= 0) return;
+    if (!state || state.outcome !== 'playing' || state.paused) return;
+    if (state.hintsLeft <= 0) return;
+    if (selected == null) return;
     if (isLocked(selected)) return;
-    if (board[selected] === puzzle.solution[selected]) return;
+    if (state.board[selected] === state.solution[selected]) return;
 
     pushSnapshot();
-    const correct = puzzle.solution[selected];
-    const nextBoard = board.slice();
+
+    const correct = state.solution[selected];
+    const nextBoard = state.board.slice();
     nextBoard[selected] = correct;
-
-    const nextWrong = new Set(wrong);
+    const nextWrong = new Set(state.wrong);
     nextWrong.delete(selected);
-
-    const nextLocked = new Set(hintLocked);
+    const nextLocked = new Set(state.hintLocked);
     nextLocked.add(selected);
+    const nextNotes = clearPeerNotes(
+      clearNotes(arraysToNotes(state.notes), selected),
+      selected,
+      correct,
+    );
 
-    const nextNotes = clearPeerNotes(clearNotes(notes, selected), selected, correct);
-
-    setBoard(nextBoard);
-    setWrong(nextWrong);
-    setHintLocked(nextLocked);
-    setNotes(nextNotes);
-    setHintsLeft(hintsLeft - 1);
-    setScore(Math.max(0, score - HINT_PENALTY));
-
-    if (isComplete(nextBoard) && nextWrong.size === 0) finish(nextBoard);
+    const won = isComplete(nextBoard) && nextWrong.size === 0;
+    setState({
+      ...state,
+      board: nextBoard,
+      notes: notesToArrays(nextNotes),
+      wrong: Array.from(nextWrong),
+      hintLocked: Array.from(nextLocked),
+      hintsLeft: state.hintsLeft - 1,
+      score: Math.max(0, state.score - HINT_PENALTY),
+      outcome: won ? 'won' : 'playing',
+    });
   };
 
   const togglePause = () => {
-    if (done || gameOver) return;
-    if (paused) {
-      if (pausedAt.current != null) {
-        startedAt.current += Date.now() - pausedAt.current;
-      }
-      pausedAt.current = null;
-      setPaused(false);
-    } else {
-      pausedAt.current = Date.now();
-      setPaused(true);
-    }
+    if (!state || state.outcome !== 'playing') return;
+    setState({ ...state, paused: !state.paused });
   };
 
-  const newGame = () => {
-    Alert.alert('New game', 'Start a new puzzle? Current progress will be lost.', [
-      { text: 'Cancel', style: 'cancel' },
-      { text: 'New game', onPress: () => setGameId(g => g + 1) },
-    ]);
+  const startNewGame = useCallback(
+    async (difficulty?: Difficulty) => {
+      await clearSudoku(persistMode);
+      const next = freshState(navMode, difficulty);
+      setState(next);
+      setHistory([]);
+      setSelected(null);
+      setNotesMode(false);
+      setFinishHandled(false);
+    },
+    [persistMode, navMode],
+  );
+
+  const promptNewGame = () => {
+    Alert.alert(
+      'New game',
+      'Start a new puzzle? Current progress will be lost.',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        { text: 'New game', onPress: () => startNewGame() },
+      ],
+    );
   };
+
+  if (loading || !state) {
+    return (
+      <SafeAreaView style={[styles.container, { backgroundColor: colors.background, alignItems: 'center', justifyContent: 'center' }]}>
+        <ActivityIndicator size="large" color={colors.accent} />
+        <Text style={{ color: colors.textMuted, marginTop: 12 }}>Generating puzzle…</Text>
+      </SafeAreaView>
+    );
+  }
 
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
       <ScrollView contentContainerStyle={styles.scroll}>
-        {!isDaily && (
+        {navMode.kind === 'random' && (
           <DifficultyPicker
-            value={difficulty}
+            value={state.difficulty}
             onChange={d => {
-              if (d === difficulty) return;
-              setDifficulty(d);
-              setGameId(g => g + 1);
+              if (d === state.difficulty) return;
+              startNewGame(d);
             }}
           />
         )}
@@ -324,25 +406,25 @@ export function SudokuScreen({ mode }: Props) {
             <Text
               style={[
                 styles.statValue,
-                { color: mistakes >= MAX_MISTAKES ? colors.error : colors.text },
+                { color: state.mistakes >= MAX_MISTAKES ? colors.error : colors.text },
               ]}
             >
-              {mistakes}/{MAX_MISTAKES}
+              {state.mistakes}/{MAX_MISTAKES}
             </Text>
           </View>
           <View style={styles.stat}>
             <Text style={[styles.statLabel, { color: colors.textMuted }]}>Score</Text>
-            <Text style={[styles.statValue, { color: colors.text }]}>{score}</Text>
+            <Text style={[styles.statValue, { color: colors.text }]}>{state.score}</Text>
           </View>
           <View style={styles.stat}>
             <Text style={[styles.statLabel, { color: colors.textMuted }]}>Time</Text>
             <View style={styles.timeRow}>
               <Text style={[styles.statValue, { color: colors.text }]}>
-                {formatTime(elapsed)}
+                {formatTime(state.elapsedMs)}
               </Text>
               <Pressable onPress={togglePause} hitSlop={8}>
                 <Ionicons
-                  name={paused ? 'play' : 'pause'}
+                  name={state.paused ? 'play' : 'pause'}
                   size={18}
                   color={colors.textMuted}
                 />
@@ -353,18 +435,18 @@ export function SudokuScreen({ mode }: Props) {
 
         <View>
           <SudokuBoard
-            board={board}
-            given={puzzle.given}
+            board={state.board}
+            given={state.given}
             notes={notes}
             selected={selected}
-            wrong={wrong}
-            hidden={paused}
+            wrong={wrongSet}
+            hidden={state.paused}
             onSelect={i => {
-              if (paused || done || gameOver) return;
+              if (state.paused || state.outcome !== 'playing') return;
               setSelected(i);
             }}
           />
-          {paused && (
+          {state.paused && (
             <Pressable
               onPress={togglePause}
               style={[styles.pauseOverlay, { backgroundColor: colors.surface }]}
@@ -379,7 +461,7 @@ export function SudokuScreen({ mode }: Props) {
           <ActionButton
             icon="arrow-undo"
             label="Undo"
-            disabled={history.length === 0 || done || gameOver}
+            disabled={history.length === 0 || state.outcome !== 'playing'}
             onPress={undo}
           />
           <ActionButton icon="backspace-outline" label="Erase" onPress={erase} />
@@ -392,8 +474,8 @@ export function SudokuScreen({ mode }: Props) {
           <ActionButton
             icon="bulb-outline"
             label="Hint"
-            badge={hintsLeft}
-            disabled={hintsLeft === 0}
+            badge={state.hintsLeft}
+            disabled={state.hintsLeft === 0}
             onPress={useHint}
           />
         </View>
@@ -413,9 +495,9 @@ export function SudokuScreen({ mode }: Props) {
           ))}
         </View>
 
-        {!isDaily && (
+        {navMode.kind === 'random' && (
           <Pressable
-            onPress={newGame}
+            onPress={promptNewGame}
             style={[styles.newGameBtn, { backgroundColor: colors.accent }]}
           >
             <Text style={{ color: '#fff', fontSize: 16, fontWeight: '700' }}>New Game</Text>
@@ -451,11 +533,7 @@ function ActionButton({ icon, label, onPress, active, disabled, badge }: ActionB
         },
       ]}
     >
-      <Ionicons
-        name={icon}
-        size={22}
-        color={active ? '#fff' : colors.text}
-      />
+      <Ionicons name={icon} size={22} color={active ? '#fff' : colors.text} />
       <Text
         style={{
           fontSize: 10,
