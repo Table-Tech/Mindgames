@@ -9,11 +9,17 @@
     "assetBundlePatterns": ["**/*"],
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.mindgames.app"
+      "bundleIdentifier": "com.mindgames.app",
+      "infoPlist": {
+        "NSUserNotificationsUsageDescription": "Mindgames sends an optional daily reminder when a new puzzle is available."
+      }
     },
     "android": {
-      "package": "com.mindgames.app"
+      "package": "com.mindgames.app",
+      "permissions": ["VIBRATE", "RECEIVE_BOOT_COMPLETED", "SCHEDULE_EXACT_ALARM"]
     },
-    "plugins": []
+    "plugins": [
+      "expo-notifications"
+    ]
   }
 }
