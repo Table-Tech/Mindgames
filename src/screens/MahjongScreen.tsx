@@ -26,6 +26,7 @@ import { AdBanner } from '@/ads/AdBanner';
 import { maybeShowInterstitial } from '@/ads/interstitial';
 import { useEntitlements } from '@/iap/EntitlementsProvider';
 import { submitScore, todayISO } from '@/leaderboard/leaderboard';
+import { recordFinish } from '@/stats/stats';
 
 const STARTING_HINTS = 3;
 const STARTING_SHUFFLES = 2;
@@ -247,6 +248,15 @@ export function MahjongScreen({ mode }: Props) {
       const timeMs = (state.finishedAt ?? Date.now()) - state.startedAt;
       const shouldInterstitial = await maybeShowInterstitial(adsRemoved);
       if (shouldInterstitial) Alert.alert('Ad', '(Interstitial would show here)');
+
+      await recordFinish({
+        game: 'mahjong',
+        mode: mode.kind,
+        outcome: state.outcome === 'won' ? 'won' : 'lost',
+        timeMs,
+        date: todayISO(),
+        score: state.score,
+      });
 
       if (state.outcome === 'won') {
         if (mode.kind === 'daily') {

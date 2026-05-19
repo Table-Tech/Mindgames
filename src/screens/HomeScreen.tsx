@@ -70,6 +70,12 @@ export function HomeScreen({ navigation }: Props) {
 
         <View style={styles.bottomRow}>
           <Pressable
+            onPress={() => navigation.navigate('Stats')}
+            style={[styles.linkBtn, { borderColor: colors.border }]}
+          >
+            <Text style={{ color: colors.text }}>Stats</Text>
+          </Pressable>
+          <Pressable
             onPress={() => navigation.navigate('Leaderboard')}
             style={[styles.linkBtn, { borderColor: colors.border }]}
           >

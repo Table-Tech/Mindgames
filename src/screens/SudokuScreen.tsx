@@ -29,6 +29,7 @@ import { AdBanner } from '@/ads/AdBanner';
 import { maybeShowInterstitial } from '@/ads/interstitial';
 import { useEntitlements } from '@/iap/EntitlementsProvider';
 import { submitScore, todayISO } from '@/leaderboard/leaderboard';
+import { recordFinish } from '@/stats/stats';
 
 type NavMode =
   | { kind: 'random'; difficulty: Difficulty }
@@ -186,6 +187,16 @@ export function SudokuScreen({ mode: navMode }: Props) {
       const shouldInterstitial = await maybeShowInterstitial(adsRemoved);
       if (shouldInterstitial) Alert.alert('Ad', '(Interstitial would show here)');
 
+      await recordFinish({
+        game: 'sudoku',
+        mode: navMode.kind,
+        outcome: won ? 'won' : 'lost',
+        timeMs: finalElapsed,
+        date: todayISO(),
+        difficulty: state?.difficulty,
+        score: finalScore,
+      });
+
       if (!won) {
         Alert.alert('Game over', `You made ${MAX_MISTAKES} mistakes.`);
         return;
@@ -208,7 +219,7 @@ export function SudokuScreen({ mode: navMode }: Props) {
         Alert.alert('Solved!', `Time: ${formatTime(finalElapsed)}\nScore: ${finalScore}`);
       }
     },
-    [adsRemoved, navMode.kind],
+    [adsRemoved, navMode.kind, state?.difficulty],
   );
 
   // Trigger finish-side-effects once when game ends.

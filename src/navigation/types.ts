@@ -12,5 +12,6 @@ export type RootStackParamList = {
   Wordle: { mode: WordleMode };
   Mahjong: { mode: MahjongMode };
   Leaderboard: undefined;
+  Stats: undefined;
   Settings: undefined;
 };

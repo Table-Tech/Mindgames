@@ -20,6 +20,7 @@ import { AdBanner } from '@/ads/AdBanner';
 import { maybeShowInterstitial } from '@/ads/interstitial';
 import { useEntitlements } from '@/iap/EntitlementsProvider';
 import { submitScore, todayISO } from '@/leaderboard/leaderboard';
+import { recordFinish } from '@/stats/stats';
 
 interface Props {
   mode: WordleMode;
@@ -144,6 +145,15 @@ export function WordleScreen({ mode }: Props) {
       const timeMs = (state.finishedAt ?? Date.now()) - state.startedAt;
       const shouldInterstitial = await maybeShowInterstitial(adsRemoved);
       if (shouldInterstitial) Alert.alert('Ad', '(Interstitial would show here)');
+
+      await recordFinish({
+        game: 'wordle',
+        mode: mode.kind,
+        outcome: state.outcome === 'won' ? 'won' : 'lost',
+        timeMs,
+        date: todayISO(),
+        guesses: state.guesses.length,
+      });
 
       if (state.outcome === 'won') {
         if (mode.kind === 'daily') {

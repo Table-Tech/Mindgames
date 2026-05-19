@@ -7,6 +7,7 @@ import { SudokuScreen } from '@/screens/SudokuScreen';
 import { WordleScreen } from '@/screens/WordleScreen';
 import { MahjongScreen } from '@/screens/MahjongScreen';
 import { LeaderboardScreen } from '@/screens/LeaderboardScreen';
+import { StatsScreen } from '@/screens/StatsScreen';
 import { SettingsScreen } from '@/screens/SettingsScreen';
 import type { RootStackParamList } from './types';
 
@@ -48,6 +49,7 @@ export function RootNavigator() {
           {({ route }) => <MahjongScreen mode={route.params.mode} />}
         </Stack.Screen>
         <Stack.Screen name="Leaderboard" component={LeaderboardScreen} options={{ title: 'Leaderboard' }} />
+        <Stack.Screen name="Stats" component={StatsScreen} options={{ title: 'Statistics' }} />
         <Stack.Screen name="Settings" component={SettingsScreen} options={{ title: 'Settings' }} />
       </Stack.Navigator>
     </NavigationContainer>
