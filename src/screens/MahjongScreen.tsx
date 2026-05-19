@@ -28,6 +28,10 @@ import { useEntitlements } from '@/iap/EntitlementsProvider';
 import { submitScore, todayISO } from '@/leaderboard/leaderboard';
 import { recordFinish } from '@/stats/stats';
 import { useFeedback } from '@/feedback/useFeedback';
+import { usePreferences } from '@/prefs/PreferencesProvider';
+import { ResultModal } from '@/components/ResultModal';
+import { NameInputModal } from '@/components/NameInputModal';
+import { useNavigation } from '@react-navigation/native';
 
 const STARTING_HINTS = 3;
 const STARTING_SHUFFLES = 2;
@@ -70,8 +74,13 @@ export function MahjongScreen({ mode }: Props) {
   const { colors } = useTheme();
   const { adsRemoved } = useEntitlements();
   const fb = useFeedback();
+  const { prefs, setPref } = usePreferences();
+  const navigation = useNavigation();
 
   const [state, setState] = useState<MahjongState | null>(null);
+  const [resultVisible, setResultVisible] = useState(false);
+  const [nameModalVisible, setNameModalVisible] = useState(false);
+  const pendingDailyRef = React.useRef<{ timeMs: number } | null>(null);
   const [selectedId, setSelectedId] = useState<number | null>(null);
   const [hintIds, setHintIds] = useState<Set<number>>(() => new Set());
   const [history, setHistory] = useState<Snapshot[]>([]);
@@ -264,28 +273,17 @@ export function MahjongScreen({ mode }: Props) {
         score: state.score,
       });
 
-      if (state.outcome === 'won') {
-        if (mode.kind === 'daily') {
-          const record = async (name: string) =>
-            submitScore({ name: name || 'Anon', timeMs, date: todayISO() });
-          if (Platform.OS === 'ios') {
-            Alert.prompt(
-              'Daily solved!',
-              `Time: ${formatTime(timeMs)}\nScore: ${state.score}`,
-              (name?: string) => record(name ?? ''),
-            );
-          } else {
-            Alert.alert('Daily solved!', `Time: ${formatTime(timeMs)}\nScore: ${state.score}`);
-            record('Anon');
-          }
-        } else {
-          Alert.alert('Solved!', `Time: ${formatTime(timeMs)}\nScore: ${state.score}`);
+      if (state.outcome === 'won' && mode.kind === 'daily') {
+        pendingDailyRef.current = { timeMs };
+        if (!prefs.playerName) {
+          setNameModalVisible(true);
+          return;
         }
-      } else {
-        Alert.alert('No more moves', 'No matching free pairs left.');
+        await submitScore({ name: prefs.playerName, timeMs, date: todayISO() });
       }
+      setResultVisible(true);
     })();
-  }, [state, adsRemoved, mode]);
+  }, [state, adsRemoved, mode, prefs.playerName]);
 
   const startNewGame = async () => {
     await clearGame(mode);
@@ -377,6 +375,52 @@ export function MahjongScreen({ mode }: Props) {
         </View>
       </ScrollView>
       <AdBanner />
+
+      <NameInputModal
+        visible={nameModalVisible}
+        title="Save your daily score"
+        message="Your name will appear on the daily leaderboard."
+        defaultValue={prefs.playerName}
+        onSubmit={async name => {
+          setNameModalVisible(false);
+          const finalName = name || 'Anon';
+          setPref('playerName', name);
+          const r = pendingDailyRef.current;
+          if (r) await submitScore({ name: finalName, timeMs: r.timeMs, date: todayISO() });
+          setResultVisible(true);
+        }}
+        onDismiss={() => {
+          setNameModalVisible(false);
+          setResultVisible(true);
+        }}
+      />
+
+      <ResultModal
+        visible={resultVisible}
+        won={state.outcome === 'won'}
+        title={state.outcome === 'won' ? 'Solved!' : 'No more moves'}
+        subtitle={state.outcome === 'won' ? 'All tiles cleared' : 'No matching free pairs left.'}
+        stats={[
+          { label: 'Time', value: formatTime(elapsed) },
+          { label: 'Score', value: `${state.score}` },
+          { label: 'Tiles', value: `${state.tiles.length - state.removed.size}` },
+        ]}
+        share={{
+          game: 'mahjong',
+          timeMs: elapsed,
+          score: state.score,
+          won: state.outcome === 'won',
+          dayLabel: mode.kind === 'daily' ? todayISO() : undefined,
+        }}
+        primaryLabel={mode.kind === 'daily' ? 'Back to menu' : 'New game'}
+        onPrimary={() => {
+          setResultVisible(false);
+          if (mode.kind === 'random') startNewGame();
+          else navigation.goBack();
+        }}
+        secondaryLabel={mode.kind === 'random' ? 'Back to menu' : undefined}
+        onSecondary={mode.kind === 'random' ? () => { setResultVisible(false); navigation.goBack(); } : undefined}
+      />
     </SafeAreaView>
   );
 }

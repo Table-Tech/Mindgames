@@ -22,6 +22,10 @@ import { useEntitlements } from '@/iap/EntitlementsProvider';
 import { submitScore, todayISO } from '@/leaderboard/leaderboard';
 import { recordFinish } from '@/stats/stats';
 import { useFeedback } from '@/feedback/useFeedback';
+import { usePreferences } from '@/prefs/PreferencesProvider';
+import { ResultModal } from '@/components/ResultModal';
+import { NameInputModal } from '@/components/NameInputModal';
+import { useNavigation } from '@react-navigation/native';
 
 interface Props {
   mode: WordleMode;
@@ -46,8 +50,13 @@ export function WordleScreen({ mode }: Props) {
   const { colors } = useTheme();
   const { adsRemoved } = useEntitlements();
   const fb = useFeedback();
+  const { prefs, setPref } = usePreferences();
+  const navigation = useNavigation();
 
   const [state, setState] = useState<WordleState | null>(null);
+  const [resultVisible, setResultVisible] = useState(false);
+  const [nameModalVisible, setNameModalVisible] = useState(false);
+  const pendingDailyRef = React.useRef<{ timeMs: number } | null>(null);
   const [toast, setToast] = useState<string | null>(null);
   const [now, setNow] = useState(Date.now());
   const finishHandled = useRef(false);
@@ -164,35 +173,17 @@ export function WordleScreen({ mode }: Props) {
         guesses: state.guesses.length,
       });
 
-      if (state.outcome === 'won') {
-        if (mode.kind === 'daily') {
-          const record = async (name: string) => {
-            await submitScore({ name: name || 'Anon', timeMs, date: todayISO() });
-          };
-          if (Platform.OS === 'ios') {
-            Alert.prompt(
-              'Daily solved!',
-              `${state.guesses.length}/${MAX_GUESSES} guesses · ${formatTime(timeMs)}`,
-              (name?: string) => record(name ?? ''),
-            );
-          } else {
-            Alert.alert(
-              'Daily solved!',
-              `${state.guesses.length}/${MAX_GUESSES} guesses · ${formatTime(timeMs)}`,
-            );
-            record('Anon');
-          }
-        } else {
-          Alert.alert(
-            'Solved!',
-            `${state.guesses.length}/${MAX_GUESSES} guesses · ${formatTime(timeMs)}`,
-          );
+      if (state.outcome === 'won' && mode.kind === 'daily') {
+        pendingDailyRef.current = { timeMs };
+        if (!prefs.playerName) {
+          setNameModalVisible(true);
+          return;
         }
-      } else {
-        Alert.alert('Game over', `The word was: ${state.answer.toUpperCase()}`);
+        await submitScore({ name: prefs.playerName, timeMs, date: todayISO() });
       }
+      setResultVisible(true);
     })();
-  }, [state, adsRemoved, mode]);
+  }, [state, adsRemoved, mode, prefs.playerName]);
 
   const startNewGame = useCallback(async () => {
     await clearGame(mode);
@@ -252,6 +243,59 @@ export function WordleScreen({ mode }: Props) {
         />
       </View>
       <AdBanner />
+
+      <NameInputModal
+        visible={nameModalVisible}
+        title="Save your daily score"
+        message="Your name will appear on the daily leaderboard."
+        defaultValue={prefs.playerName}
+        onSubmit={async name => {
+          setNameModalVisible(false);
+          const finalName = name || 'Anon';
+          setPref('playerName', name);
+          const r = pendingDailyRef.current;
+          if (r) await submitScore({ name: finalName, timeMs: r.timeMs, date: todayISO() });
+          setResultVisible(true);
+        }}
+        onDismiss={() => {
+          setNameModalVisible(false);
+          setResultVisible(true);
+        }}
+      />
+
+      <ResultModal
+        visible={resultVisible}
+        won={state.outcome === 'won'}
+        title={state.outcome === 'won' ? 'Solved!' : 'Better luck next time'}
+        subtitle={
+          state.outcome === 'won'
+            ? `Got it in ${state.guesses.length}/${MAX_GUESSES}`
+            : `The word was ${state.answer.toUpperCase()}`
+        }
+        stats={[
+          { label: 'Guesses', value: `${state.guesses.length}/${MAX_GUESSES}` },
+          { label: 'Time', value: formatTime(elapsed) },
+        ]}
+        share={{
+          game: 'wordle',
+          timeMs: elapsed,
+          won: state.outcome === 'won',
+          maxGuesses: MAX_GUESSES,
+          wordleGuesses: state.guesses,
+          dayLabel: mode.kind === 'daily' ? todayISO() : undefined,
+        }}
+        primaryLabel={mode.kind === 'daily' ? 'Back to menu' : 'New word'}
+        onPrimary={async () => {
+          setResultVisible(false);
+          if (mode.kind === 'random') {
+            await startNewGame();
+          } else {
+            navigation.goBack();
+          }
+        }}
+        secondaryLabel={mode.kind === 'random' ? 'Back to menu' : undefined}
+        onSecondary={mode.kind === 'random' ? () => { setResultVisible(false); navigation.goBack(); } : undefined}
+      />
     </SafeAreaView>
   );
 }

@@ -31,6 +31,10 @@ import { useEntitlements } from '@/iap/EntitlementsProvider';
 import { submitScore, todayISO } from '@/leaderboard/leaderboard';
 import { recordFinish } from '@/stats/stats';
 import { useFeedback } from '@/feedback/useFeedback';
+import { usePreferences } from '@/prefs/PreferencesProvider';
+import { ResultModal } from '@/components/ResultModal';
+import { NameInputModal } from '@/components/NameInputModal';
+import { useNavigation } from '@react-navigation/native';
 
 type NavMode =
   | { kind: 'random'; difficulty: Difficulty }
@@ -97,6 +101,11 @@ export function SudokuScreen({ mode: navMode }: Props) {
   const { colors } = useTheme();
   const { adsRemoved } = useEntitlements();
   const fb = useFeedback();
+  const { prefs, setPref } = usePreferences();
+  const navigation = useNavigation();
+  const [resultVisible, setResultVisible] = useState(false);
+  const [nameModalVisible, setNameModalVisible] = useState(false);
+  const pendingDailyResultRef = React.useRef<{ timeMs: number; score: number } | null>(null);
 
   const persistMode: PersistMode = useMemo(
     () => (navMode.kind === 'daily' ? { kind: 'daily' } : { kind: 'random' }),
@@ -200,28 +209,21 @@ export function SudokuScreen({ mode: navMode }: Props) {
       });
 
       if (!won) {
-        Alert.alert('Game over', `You made ${MAX_MISTAKES} mistakes.`);
+        setResultVisible(true);
         return;
       }
 
       if (navMode.kind === 'daily') {
-        const record = async (name: string) =>
-          submitScore({ name: name || 'Anon', timeMs: finalElapsed, date: todayISO() });
-        if (Platform.OS === 'ios') {
-          Alert.prompt(
-            'Daily challenge solved!',
-            `Time: ${formatTime(finalElapsed)}\nScore: ${finalScore}`,
-            (name?: string) => record(name ?? ''),
-          );
-        } else {
-          Alert.alert('Daily challenge solved!', `Time: ${formatTime(finalElapsed)}\nScore: ${finalScore}`);
-          record('Anon');
+        pendingDailyResultRef.current = { timeMs: finalElapsed, score: finalScore };
+        if (!prefs.playerName) {
+          setNameModalVisible(true);
+          return;
         }
-      } else {
-        Alert.alert('Solved!', `Time: ${formatTime(finalElapsed)}\nScore: ${finalScore}`);
+        await submitScore({ name: prefs.playerName, timeMs: finalElapsed, date: todayISO() });
       }
+      setResultVisible(true);
     },
-    [adsRemoved, navMode.kind, state?.difficulty],
+    [adsRemoved, navMode.kind, state?.difficulty, prefs.playerName],
   );
 
   // Trigger finish-side-effects once when game ends.
@@ -523,6 +525,60 @@ export function SudokuScreen({ mode: navMode }: Props) {
         )}
       </ScrollView>
       <AdBanner />
+
+      <NameInputModal
+        visible={nameModalVisible}
+        title="Save your daily score"
+        message="Your name will appear on the daily leaderboard."
+        placeholder="Your name"
+        defaultValue={prefs.playerName}
+        onSubmit={async name => {
+          setNameModalVisible(false);
+          const finalName = name || 'Anon';
+          setPref('playerName', name);
+          const r = pendingDailyResultRef.current;
+          if (r) await submitScore({ name: finalName, timeMs: r.timeMs, date: todayISO() });
+          setResultVisible(true);
+        }}
+        onDismiss={() => {
+          setNameModalVisible(false);
+          setResultVisible(true);
+        }}
+      />
+
+      <ResultModal
+        visible={resultVisible}
+        won={state.outcome === 'won'}
+        title={state.outcome === 'won' ? 'Solved!' : 'Game over'}
+        subtitle={
+          state.outcome === 'won'
+            ? navMode.kind === 'daily'
+              ? "You finished today's daily Sudoku"
+              : `Difficulty: ${state.difficulty[0].toUpperCase() + state.difficulty.slice(1)}`
+            : `You made ${MAX_MISTAKES} mistakes`
+        }
+        stats={[
+          { label: 'Time', value: formatTime(state.elapsedMs) },
+          { label: 'Score', value: `${state.score}` },
+          { label: 'Hints', value: `${STARTING_HINTS - state.hintsLeft}` },
+        ]}
+        share={{
+          game: 'sudoku',
+          difficulty: state.difficulty,
+          timeMs: state.elapsedMs,
+          score: state.score,
+          won: state.outcome === 'won',
+          dayLabel: navMode.kind === 'daily' ? todayISO() : undefined,
+        }}
+        primaryLabel={navMode.kind === 'daily' ? 'Back to menu' : 'Play again'}
+        onPrimary={() => {
+          setResultVisible(false);
+          if (navMode.kind === 'random') startNewGame();
+          else navigation.goBack();
+        }}
+        secondaryLabel={navMode.kind === 'random' ? 'Back to menu' : undefined}
+        onSecondary={navMode.kind === 'random' ? () => { setResultVisible(false); navigation.goBack(); } : undefined}
+      />
     </SafeAreaView>
   );
 }
