@@ -1,9 +1,12 @@
 import { getJSON, setJSON } from '@/storage/storage';
+import { submitLeaderboardScore } from '@/cloud/firebase';
+import type { GameId } from '@/stats/stats';
 
 export interface LeaderboardEntry {
   name: string;
   timeMs: number;
   date: string; // ISO yyyy-mm-dd
+  game?: GameId;
 }
 
 const KEY = 'sudoku.daily.leaderboard.v1';
@@ -22,6 +25,14 @@ export async function submitScore(entry: LeaderboardEntry): Promise<LeaderboardE
   });
   const trimmed = list.slice(0, MAX_ENTRIES);
   await setJSON(KEY, trimmed);
+
+  // Fire-and-forget cloud mirror; stub no-ops until Firebase is wired up.
+  if (entry.game) {
+    submitLeaderboardScore(entry.game, entry.date, {
+      name: entry.name,
+      timeMs: entry.timeMs,
+    }).catch(() => {});
+  }
   return trimmed;
 }
 

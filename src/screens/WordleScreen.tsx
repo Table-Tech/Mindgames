@@ -191,7 +191,7 @@ export function WordleScreen({ mode }: Props) {
           setNameModalVisible(true);
           return;
         }
-        await submitScore({ name: prefs.playerName, timeMs, date: todayISO() });
+        await submitScore({ name: prefs.playerName, timeMs, date: todayISO(), game: 'wordle' });
       }
       setResultVisible(true);
     })();
@@ -272,7 +272,7 @@ export function WordleScreen({ mode }: Props) {
           const finalName = name || 'Anon';
           setPref('playerName', name);
           const r = pendingDailyRef.current;
-          if (r) await submitScore({ name: finalName, timeMs: r.timeMs, date: todayISO() });
+          if (r) await submitScore({ name: finalName, timeMs: r.timeMs, date: todayISO(), game: 'wordle' });
           setResultVisible(true);
         }}
         onDismiss={() => {

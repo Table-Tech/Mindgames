@@ -223,7 +223,7 @@ export function SudokuScreen({ mode: navMode }: Props) {
           setNameModalVisible(true);
           return;
         }
-        await submitScore({ name: prefs.playerName, timeMs: finalElapsed, date: todayISO() });
+        await submitScore({ name: prefs.playerName, timeMs: finalElapsed, date: todayISO(), game: 'sudoku' });
       }
       setResultVisible(true);
     },
@@ -547,7 +547,7 @@ export function SudokuScreen({ mode: navMode }: Props) {
           const finalName = name || 'Anon';
           setPref('playerName', name);
           const r = pendingDailyResultRef.current;
-          if (r) await submitScore({ name: finalName, timeMs: r.timeMs, date: todayISO() });
+          if (r) await submitScore({ name: finalName, timeMs: r.timeMs, date: todayISO(), game: 'sudoku' });
           setResultVisible(true);
         }}
         onDismiss={() => {

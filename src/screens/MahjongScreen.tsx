@@ -268,7 +268,7 @@ export function MahjongScreen({ mode }: Props) {
           setNameModalVisible(true);
           return;
         }
-        await submitScore({ name: prefs.playerName, timeMs, date: todayISO() });
+        await submitScore({ name: prefs.playerName, timeMs, date: todayISO(), game: 'mahjong' });
       }
       setResultVisible(true);
     })();
@@ -381,7 +381,7 @@ export function MahjongScreen({ mode }: Props) {
           const finalName = name || 'Anon';
           setPref('playerName', name);
           const r = pendingDailyRef.current;
-          if (r) await submitScore({ name: finalName, timeMs: r.timeMs, date: todayISO() });
+          if (r) await submitScore({ name: finalName, timeMs: r.timeMs, date: todayISO(), game: 'mahjong' });
           setResultVisible(true);
         }}
         onDismiss={() => {
