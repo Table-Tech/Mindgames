@@ -3,15 +3,18 @@ import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { useTheme } from '@/theme/ThemeProvider';
 import type { Board } from './types';
 
+export type NotesBoard = ReadonlyArray<ReadonlySet<number>>;
+
 interface Props {
   board: Board;
   given: Board;
+  notes: NotesBoard;
   selected: number | null;
   conflicts: Set<number>;
   onSelect: (index: number) => void;
 }
 
-export function SudokuBoard({ board, given, selected, conflicts, onSelect }: Props) {
+export function SudokuBoard({ board, given, notes, selected, conflicts, onSelect }: Props) {
   const { colors } = useTheme();
   const selectedVal = selected != null ? board[selected] : 0;
   const selRow = selected != null ? Math.floor(selected / 9) : -1;
@@ -42,6 +45,9 @@ export function SudokuBoard({ board, given, selected, conflicts, onSelect }: Pro
             const borderRight = (c + 1) % 3 === 0 && c !== 8 ? 2 : StyleSheet.hairlineWidth;
             const borderBottom = (r + 1) % 3 === 0 && r !== 8 ? 2 : StyleSheet.hairlineWidth;
 
+            const cellNotes = notes[i];
+            const showNotes = val === 0 && cellNotes.size > 0;
+
             return (
               <Pressable
                 key={c}
@@ -56,15 +62,27 @@ export function SudokuBoard({ board, given, selected, conflicts, onSelect }: Pro
                   },
                 ]}
               >
-                <Text
-                  style={{
-                    fontSize: 22,
-                    fontWeight: isGiven ? '700' : '500',
-                    color: isConflict ? colors.error : isGiven ? colors.text : colors.accent,
-                  }}
-                >
-                  {val === 0 ? '' : val}
-                </Text>
+                {val !== 0 ? (
+                  <Text
+                    style={{
+                      fontSize: 22,
+                      fontWeight: isGiven ? '700' : '500',
+                      color: isConflict ? colors.error : isGiven ? colors.text : colors.accent,
+                    }}
+                  >
+                    {val}
+                  </Text>
+                ) : showNotes ? (
+                  <View style={styles.notesGrid}>
+                    {[1, 2, 3, 4, 5, 6, 7, 8, 9].map(n => (
+                      <View key={n} style={styles.noteCell}>
+                        <Text style={[styles.noteText, { color: colors.textMuted }]}>
+                          {cellNotes.has(n) ? n : ''}
+                        </Text>
+                      </View>
+                    ))}
+                  </View>
+                ) : null}
               </Pressable>
             );
           })}
@@ -85,5 +103,22 @@ const styles = StyleSheet.create({
     flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
+    padding: 2,
+  },
+  notesGrid: {
+    flex: 1,
+    width: '100%',
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+  },
+  noteCell: {
+    width: '33.33%',
+    height: '33.33%',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  noteText: {
+    fontSize: 9,
+    fontWeight: '500',
   },
 });

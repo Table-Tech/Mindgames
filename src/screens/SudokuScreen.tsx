@@ -5,6 +5,7 @@ import { useTheme } from '@/theme/ThemeProvider';
 import { SudokuBoard } from '@/games/sudoku/SudokuBoard';
 import { dailyPuzzle, randomPuzzle } from '@/games/sudoku/generator';
 import { findConflicts, isComplete } from '@/games/sudoku/findConflicts';
+import { clearNotes, clearPeerNotes, emptyNotes, toggleNote } from '@/games/sudoku/notes';
 import type { Difficulty, Puzzle } from '@/games/sudoku/types';
 import { AdBanner } from '@/ads/AdBanner';
 import { maybeShowInterstitial } from '@/ads/interstitial';
@@ -34,6 +35,8 @@ export function SudokuScreen({ mode, onFinishedDaily }: Props) {
   );
 
   const [board, setBoard] = useState(() => puzzle.given.slice());
+  const [notes, setNotes] = useState(() => emptyNotes());
+  const [notesMode, setNotesMode] = useState(false);
   const [selected, setSelected] = useState<number | null>(null);
   const [elapsed, setElapsed] = useState(0);
   const [done, setDone] = useState(false);
@@ -50,10 +53,39 @@ export function SudokuScreen({ mode, onFinishedDaily }: Props) {
   const inputNumber = (n: number) => {
     if (selected == null || done) return;
     if (puzzle.given[selected] !== 0) return;
+
+    if (notesMode && n !== 0) {
+      // Notes can only live in empty cells.
+      if (board[selected] !== 0) return;
+      setNotes(toggleNote(notes, selected, n));
+      return;
+    }
+
     const next = board.slice();
     next[selected] = next[selected] === n ? 0 : n;
     setBoard(next);
+
+    // Placing a digit clears notes on that cell and auto-removes
+    // that digit from peers' notes.
+    let nextNotes = clearNotes(notes, selected);
+    if (next[selected] !== 0) {
+      nextNotes = clearPeerNotes(nextNotes, selected, next[selected]);
+    }
+    if (nextNotes !== notes) setNotes(nextNotes);
+
     if (isComplete(next)) finish(next);
+  };
+
+  const erase = () => {
+    if (selected == null || done) return;
+    if (puzzle.given[selected] !== 0) return;
+    if (board[selected] !== 0) {
+      const next = board.slice();
+      next[selected] = 0;
+      setBoard(next);
+    } else if (notes[selected].size > 0) {
+      setNotes(clearNotes(notes, selected));
+    }
   };
 
   const finish = async (finalBoard: number[]) => {
@@ -79,8 +111,6 @@ export function SudokuScreen({ mode, onFinishedDaily }: Props) {
           (name?: string) => record(name ?? ''),
         );
       } else {
-        // Android: Alert.prompt is unavailable; record anonymously.
-        // TODO: replace with a custom modal that accepts a name on Android.
         Alert.alert('Daily challenge solved!', `Time: ${formatTime(timeMs)}`);
         record('Anon');
       }
@@ -101,6 +131,7 @@ export function SudokuScreen({ mode, onFinishedDaily }: Props) {
         <SudokuBoard
           board={board}
           given={puzzle.given}
+          notes={notes}
           selected={selected}
           conflicts={conflicts}
           onSelect={setSelected}
@@ -116,12 +147,28 @@ export function SudokuScreen({ mode, onFinishedDaily }: Props) {
             </Pressable>
           ))}
         </View>
-        <Pressable
-          onPress={() => inputNumber(0)}
-          style={[styles.eraseBtn, { borderColor: colors.border }]}
-        >
-          <Text style={{ color: colors.textMuted }}>Erase</Text>
-        </Pressable>
+        <View style={styles.actionRow}>
+          <Pressable
+            onPress={() => setNotesMode(m => !m)}
+            style={[
+              styles.actionBtn,
+              {
+                backgroundColor: notesMode ? colors.accent : 'transparent',
+                borderColor: notesMode ? colors.accent : colors.border,
+              },
+            ]}
+          >
+            <Text style={{ color: notesMode ? '#fff' : colors.text, fontWeight: '600' }}>
+              Notes {notesMode ? 'ON' : 'OFF'}
+            </Text>
+          </Pressable>
+          <Pressable
+            onPress={erase}
+            style={[styles.actionBtn, { borderColor: colors.border }]}
+          >
+            <Text style={{ color: colors.textMuted }}>Erase</Text>
+          </Pressable>
+        </View>
       </ScrollView>
       <AdBanner />
     </SafeAreaView>
@@ -143,9 +190,9 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     borderWidth: StyleSheet.hairlineWidth,
   },
-  eraseBtn: {
-    alignSelf: 'center',
-    paddingHorizontal: 24,
+  actionRow: { flexDirection: 'row', gap: 12, justifyContent: 'center' },
+  actionBtn: {
+    paddingHorizontal: 20,
     paddingVertical: 12,
     borderRadius: 8,
     borderWidth: StyleSheet.hairlineWidth,
