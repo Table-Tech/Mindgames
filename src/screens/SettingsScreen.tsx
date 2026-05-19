@@ -14,6 +14,12 @@ import { useTheme } from '@/theme/ThemeProvider';
 import { useEntitlements } from '@/iap/EntitlementsProvider';
 import { usePreferences, type ThemeMode } from '@/prefs/PreferencesProvider';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { Ionicons } from '@expo/vector-icons';
+import {
+  cancelDailyReminder,
+  ensurePermission,
+  scheduleDailyReminder,
+} from '@/notifications/dailyReminder';
 
 export function SettingsScreen() {
   const { colors } = useTheme();
@@ -128,14 +134,31 @@ export function SettingsScreen() {
           <SwitchRow
             label="Notify me when a new daily is available"
             value={prefs.dailyReminderEnabled}
-            onChange={v => setPref('dailyReminderEnabled', v)}
+            onChange={async v => {
+              if (v) {
+                const granted = await ensurePermission();
+                if (!granted) {
+                  Alert.alert('Permission denied', 'Enable notifications for Mindgames in system settings to use reminders.');
+                  return;
+                }
+                await scheduleDailyReminder(prefs.dailyReminderHour, prefs.dailyReminderMinute);
+              } else {
+                await cancelDailyReminder();
+              }
+              setPref('dailyReminderEnabled', v);
+            }}
           />
           {prefs.dailyReminderEnabled && (
             <Row label="Time">
-              <Text style={[styles.timeValue, { color: colors.text }]}>
-                {prefs.dailyReminderHour.toString().padStart(2, '0')}:
-                {prefs.dailyReminderMinute.toString().padStart(2, '0')}
-              </Text>
+              <TimeStepper
+                hour={prefs.dailyReminderHour}
+                minute={prefs.dailyReminderMinute}
+                onChange={async (h, m) => {
+                  setPref('dailyReminderHour', h);
+                  setPref('dailyReminderMinute', m);
+                  await scheduleDailyReminder(h, m);
+                }}
+              />
             </Row>
           )}
         </Section>
@@ -230,6 +253,50 @@ function SwitchRow({ label, value, onChange }: { label: string; value: boolean; 
     <Row label={label}>
       <Switch value={value} onValueChange={onChange} />
     </Row>
+  );
+}
+
+function TimeStepper({
+  hour,
+  minute,
+  onChange,
+}: {
+  hour: number;
+  minute: number;
+  onChange: (h: number, m: number) => void;
+}) {
+  const { colors } = useTheme();
+  const adjust = (h: number, m: number) => {
+    const total = ((h * 60 + m) % (24 * 60) + 24 * 60) % (24 * 60);
+    onChange(Math.floor(total / 60), total % 60);
+  };
+  const Step = ({ icon, onPress }: { icon: 'remove' | 'add'; onPress: () => void }) => (
+    <Pressable
+      onPress={onPress}
+      style={{
+        padding: 6,
+        borderRadius: 6,
+        borderWidth: StyleSheet.hairlineWidth,
+        borderColor: colors.border,
+      }}
+    >
+      <Ionicons name={icon} size={14} color={colors.text} />
+    </Pressable>
+  );
+  return (
+    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+      <Step icon="remove" onPress={() => adjust(hour - 1, minute)} />
+      <Text style={[styles.timeValue, { color: colors.text, minWidth: 24, textAlign: 'center' }]}>
+        {hour.toString().padStart(2, '0')}
+      </Text>
+      <Step icon="add" onPress={() => adjust(hour + 1, minute)} />
+      <Text style={{ color: colors.textMuted, marginHorizontal: 2 }}>:</Text>
+      <Step icon="remove" onPress={() => adjust(hour, minute - 15)} />
+      <Text style={[styles.timeValue, { color: colors.text, minWidth: 24, textAlign: 'center' }]}>
+        {minute.toString().padStart(2, '0')}
+      </Text>
+      <Step icon="add" onPress={() => adjust(hour, minute + 15)} />
+    </View>
   );
 }
 
