@@ -1,0 +1,19 @@
+{
+  "expo": {
+    "name": "Mindgames",
+    "slug": "mindgames",
+    "version": "0.1.0",
+    "orientation": "portrait",
+    "userInterfaceStyle": "automatic",
+    "scheme": "mindgames",
+    "assetBundlePatterns": ["**/*"],
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "com.mindgames.app"
+    },
+    "android": {
+      "package": "com.mindgames.app"
+    },
+    "plugins": []
+  }
+}
