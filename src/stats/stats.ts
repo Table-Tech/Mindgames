@@ -49,6 +49,46 @@ function isoOffset(iso: string, days: number): string {
   return `${yy}-${mm}-${dd}`;
 }
 
+// Stats for a single Sudoku difficulty bucket. Hides win-streak fields since
+// those are aggregated at the game level, not per difficulty.
+export interface DifficultyStats {
+  difficulty: string;
+  played: number;
+  won: number;
+  bestTimeMs: number | null;
+  avgTimeMs: number | null;
+}
+
+export function computeSudokuByDifficulty(records: FinishRecord[]): DifficultyStats[] {
+  const order = ['easy', 'medium', 'hard', 'expert', 'master', 'extreme'];
+  const buckets = new Map<string, FinishRecord[]>();
+  for (const r of records) {
+    if (r.game !== 'sudoku' || !r.difficulty) continue;
+    const list = buckets.get(r.difficulty) ?? [];
+    list.push(r);
+    buckets.set(r.difficulty, list);
+  }
+  const result: DifficultyStats[] = [];
+  for (const d of order) {
+    const list = buckets.get(d) ?? [];
+    const wins = list.filter(r => r.outcome === 'won');
+    let best: number | null = null;
+    let total = 0;
+    for (const w of wins) {
+      total += w.timeMs;
+      if (best === null || w.timeMs < best) best = w.timeMs;
+    }
+    result.push({
+      difficulty: d,
+      played: list.length,
+      won: wins.length,
+      bestTimeMs: best,
+      avgTimeMs: wins.length ? Math.round(total / wins.length) : null,
+    });
+  }
+  return result;
+}
+
 export function computeStats(records: FinishRecord[], game: GameId): GameStats {
   const all = records.filter(r => r.game === game);
   const wins = all.filter(r => r.outcome === 'won');

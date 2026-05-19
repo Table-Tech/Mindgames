@@ -4,9 +4,11 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useTheme } from '@/theme/ThemeProvider';
 import {
   computeStats,
+  computeSudokuByDifficulty,
   formatTime,
   getRecords,
   winRate,
+  type DifficultyStats,
   type FinishRecord,
   type GameId,
   type GameStats,
@@ -39,7 +41,13 @@ export function StatsScreen() {
         </Text>
 
         {GAMES.map(g => (
-          <GameCard key={g.id} game={g.id} label={g.label} stats={computeStats(records, g.id)} />
+          <GameCard
+            key={g.id}
+            game={g.id}
+            label={g.label}
+            stats={computeStats(records, g.id)}
+            sudokuByDifficulty={g.id === 'sudoku' ? computeSudokuByDifficulty(records) : undefined}
+          />
         ))}
 
         {records.length === 0 && (
@@ -52,7 +60,17 @@ export function StatsScreen() {
   );
 }
 
-function GameCard({ game, label, stats }: { game: GameId; label: string; stats: GameStats }) {
+function GameCard({
+  game,
+  label,
+  stats,
+  sudokuByDifficulty,
+}: {
+  game: GameId;
+  label: string;
+  stats: GameStats;
+  sudokuByDifficulty?: DifficultyStats[];
+}) {
   const { colors } = useTheme();
   return (
     <View style={[styles.card, { backgroundColor: colors.surface, borderColor: colors.border }]}>
@@ -72,6 +90,36 @@ function GameCard({ game, label, stats }: { game: GameId; label: string; stats: 
             Guess distribution · avg {stats.avgGuesses}
           </Text>
           <GuessHistogram histogram={stats.guessHistogram} />
+        </View>
+      )}
+
+      {sudokuByDifficulty && sudokuByDifficulty.some(d => d.played > 0) && (
+        <View style={{ marginTop: 12 }}>
+          <Text style={[styles.subHeading, { color: colors.textMuted }]}>By difficulty</Text>
+          <View style={styles.diffTable}>
+            <View style={[styles.diffRow, styles.diffHeader]}>
+              <Text style={[styles.diffCell, { color: colors.textMuted, flex: 1.4 }]}>Level</Text>
+              <Text style={[styles.diffCell, { color: colors.textMuted }]}>Wins</Text>
+              <Text style={[styles.diffCell, { color: colors.textMuted }]}>Best</Text>
+              <Text style={[styles.diffCell, { color: colors.textMuted }]}>Avg</Text>
+            </View>
+            {sudokuByDifficulty.map(d => (
+              <View key={d.difficulty} style={styles.diffRow}>
+                <Text style={[styles.diffCell, { color: colors.text, flex: 1.4 }]}>
+                  {d.difficulty[0].toUpperCase() + d.difficulty.slice(1)}
+                </Text>
+                <Text style={[styles.diffCell, { color: colors.text }]}>
+                  {d.won}/{d.played}
+                </Text>
+                <Text style={[styles.diffCell, { color: colors.text }]}>
+                  {formatTime(d.bestTimeMs)}
+                </Text>
+                <Text style={[styles.diffCell, { color: colors.text }]}>
+                  {formatTime(d.avgTimeMs)}
+                </Text>
+              </View>
+            ))}
+          </View>
         </View>
       )}
     </View>
@@ -149,4 +197,8 @@ const styles = StyleSheet.create({
   histBar: { height: '100%' },
   histCount: { width: 28, textAlign: 'right', fontSize: 12, fontVariant: ['tabular-nums'] },
   empty: { textAlign: 'center', marginTop: 24, paddingHorizontal: 24 },
+  diffTable: { marginTop: 6 },
+  diffRow: { flexDirection: 'row', paddingVertical: 4 },
+  diffHeader: { borderBottomWidth: StyleSheet.hairlineWidth, borderColor: '#888', marginBottom: 2 },
+  diffCell: { flex: 1, fontSize: 12, fontVariant: ['tabular-nums'] },
 });

@@ -34,6 +34,42 @@ export function evaluate(guess: string, answer: string): LetterState[] {
   return result;
 }
 
+// Hard-mode validator. Once the player has revealed a green or yellow letter
+// in a previous guess, any subsequent guess must reuse those constraints:
+//   * green letters must remain in the same position
+//   * yellow letters must appear somewhere in the guess
+export function violatesHardMode(guess: string, history: Guess[]): string | null {
+  const g = guess.toLowerCase();
+  // Build per-position green requirements and a multiset of yellow letters.
+  const greenAt = new Map<number, string>();
+  const yellowCounts = new Map<string, number>();
+  for (const h of history) {
+    const local: Record<string, number> = {};
+    for (let i = 0; i < h.states.length; i++) {
+      if (h.states[i] === 'correct') greenAt.set(i, h.word[i]);
+      else if (h.states[i] === 'present') {
+        local[h.word[i]] = (local[h.word[i]] ?? 0) + 1;
+      }
+    }
+    for (const [ch, n] of Object.entries(local)) {
+      yellowCounts.set(ch, Math.max(yellowCounts.get(ch) ?? 0, n));
+    }
+  }
+  for (const [pos, ch] of greenAt) {
+    if (g[pos] !== ch) {
+      return `${ch.toUpperCase()} must stay in position ${pos + 1}`;
+    }
+  }
+  const guessCounts: Record<string, number> = {};
+  for (const ch of g) guessCounts[ch] = (guessCounts[ch] ?? 0) + 1;
+  for (const [ch, n] of yellowCounts) {
+    if ((guessCounts[ch] ?? 0) < n) {
+      return `Guess must contain "${ch.toUpperCase()}"`;
+    }
+  }
+  return null;
+}
+
 // Best-known state per letter, combining all submitted guesses so far.
 // Used to color the on-screen keyboard.
 export function keyboardStates(guesses: Guess[]): Record<string, LetterState> {

@@ -110,6 +110,105 @@ export function generateMahjong(seed: number): Tile[] {
   return tiles;
 }
 
+// Re-assign group/glyphs to the remaining tiles in a way that is guaranteed
+// solvable. Uses the same reverse-build trick as generateMahjong but on the
+// sub-layout that's still on the board.
+export function solvableShuffle(tiles: Tile[], removed: Set<number>, seed?: number): Tile[] {
+  const rand = mulberry32(seed ?? ((Math.random() * 0xffffffff) >>> 0) || 1);
+  const remainingTiles = tiles.filter(t => !removed.has(t.id));
+  if (remainingTiles.length === 0) return tiles.slice();
+
+  // If odd count, we can't pair perfectly. (Shouldn't happen mid-game but
+  // bail safely.)
+  if (remainingTiles.length % 2 !== 0) return tiles.slice();
+
+  // Reverse-build a removal sequence over just these tile positions.
+  const positionsById = new Map<number, { x: number; y: number; z: number }>();
+  remainingTiles.forEach(t => positionsById.set(t.id, t.pos));
+  const remainingSet = new Set<number>(remainingTiles.map(t => t.id));
+  const byKey = new Map<string, { id: number; pos: { x: number; y: number; z: number } }>();
+  remainingTiles.forEach(t => byKey.set(posKey(t.pos), { id: t.id, pos: t.pos }));
+
+  const isPosFree = (id: number): boolean => {
+    const p = positionsById.get(id)!;
+    const above = byKey.get(posKey({ x: p.x, y: p.y, z: p.z + 1 }));
+    if (above && remainingSet.has(above.id)) return false;
+    const left  = byKey.get(posKey({ x: p.x - 1, y: p.y, z: p.z }));
+    const right = byKey.get(posKey({ x: p.x + 1, y: p.y, z: p.z }));
+    const lb = !!(left  && remainingSet.has(left.id));
+    const rb = !!(right && remainingSet.has(right.id));
+    return !(lb && rb);
+  };
+
+  const pairs: [number, number][] = [];
+  while (remainingSet.size > 0) {
+    const free: number[] = [];
+    for (const id of remainingSet) if (isPosFree(id)) free.push(id);
+    if (free.length < 2) {
+      // Should not happen on a layout that came from generateMahjong, but if
+      // the player has somehow reached a configuration with <2 free positions
+      // we just return tiles unchanged.
+      return tiles.slice();
+    }
+    const i1 = Math.floor(rand() * free.length);
+    const a = free[i1];
+    free.splice(i1, 1);
+    const i2 = Math.floor(rand() * free.length);
+    const b = free[i2];
+    pairs.push([a, b]);
+    remainingSet.delete(a);
+    remainingSet.delete(b);
+  }
+
+  // Re-use the existing glyph/group multiset from the remaining tiles.
+  // Each match-group still has 4 tiles in the multiset (unless one was already
+  // removed); we just shuffle which positions get which group.
+  const pool: { group: number; glyph: string }[] = [];
+  for (const t of remainingTiles) pool.push({ group: t.group, glyph: t.glyph });
+  for (let i = pool.length - 1; i > 0; i--) {
+    const j = Math.floor(rand() * (i + 1));
+    [pool[i], pool[j]] = [pool[j], pool[i]];
+  }
+  // Group pool by group-id so pairs in the reverse-build sequence get
+  // matching groups assigned.
+  const groupBuckets = new Map<number, { group: number; glyph: string }[]>();
+  for (const item of pool) {
+    const list = groupBuckets.get(item.group) ?? [];
+    list.push(item);
+    groupBuckets.set(item.group, list);
+  }
+
+  // Walk pairs and assign from buckets in pair-friendly fashion: prefer the
+  // bucket with the most remaining items so we never run out of pairings.
+  const next = tiles.slice();
+  const takenFromBucket = (g: number) => {
+    const list = groupBuckets.get(g)!;
+    return list.pop()!;
+  };
+  for (const [pa, pb] of pairs) {
+    // Pick the largest bucket with at least 2 items.
+    let pickGroup = -1;
+    let pickCount = -1;
+    for (const [g, list] of groupBuckets) {
+      if (list.length >= 2 && list.length > pickCount) {
+        pickGroup = g;
+        pickCount = list.length;
+      }
+    }
+    if (pickGroup === -1) {
+      // Fallback: pair across whatever's left (shouldn't matter for solvability
+      // because the player's own match rule is group-equality, but this branch
+      // is unreachable when counts are even per group).
+      return tiles.slice();
+    }
+    const a = takenFromBucket(pickGroup);
+    const b = takenFromBucket(pickGroup);
+    next[pa] = { ...next[pa], group: a.group, glyph: a.glyph };
+    next[pb] = { ...next[pb], group: b.group, glyph: b.glyph };
+  }
+  return next;
+}
+
 export function dailySeed(date = new Date()): number {
   const y = date.getUTCFullYear();
   const m = (date.getUTCMonth() + 1).toString().padStart(2, '0');

@@ -11,7 +11,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useTheme } from '@/theme/ThemeProvider';
 import { WordleGrid } from '@/games/wordle/WordleGrid';
 import { Keyboard } from '@/games/wordle/Keyboard';
-import { dailyAnswer, evaluate, keyboardStates, randomAnswer } from '@/games/wordle/engine';
+import { dailyAnswer, evaluate, keyboardStates, randomAnswer, violatesHardMode } from '@/games/wordle/engine';
 import { isValidWord } from '@/games/wordle/words';
 import { clearGame, loadGame, saveGame } from '@/games/wordle/persistence';
 import type { Guess, WordleMode, WordleState } from '@/games/wordle/types';
@@ -131,6 +131,14 @@ export function WordleScreen({ mode }: Props) {
           fb.wrong();
           showToast('Not in word list');
           return;
+        }
+        if (prefs.wordleHardMode) {
+          const violation = violatesHardMode(word, state.guesses);
+          if (violation) {
+            fb.wrong();
+            showToast(violation);
+            return;
+          }
         }
         const states = evaluate(word, state.answer);
         const guess: Guess = { word, states };

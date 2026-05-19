@@ -19,6 +19,7 @@ import {
   generateMahjong,
   isStuck,
   randomSeed,
+  solvableShuffle,
 } from '@/games/mahjong/engine';
 import { clearGame, loadGame, saveGame } from '@/games/mahjong/persistence';
 import type { MahjongMode, MahjongState, Tile } from '@/games/mahjong/types';
@@ -232,27 +233,11 @@ export function MahjongScreen({ mode }: Props) {
   const shuffleRemaining = () => {
     if (!state || state.outcome !== 'playing' || state.shufflesLeft <= 0) return;
     pushSnapshot(state);
-    // Reshuffle group/glyph assignment of remaining tiles in place,
-    // preserving their positions and the existing solvability via reverse-build
-    // on the remaining sub-layout would be ideal; for v1 we do a simple
-    // permutation of remaining group/glyph and accept that it may stay stuck.
-    const remainingTiles = state.tiles.filter(t => !state.removed.has(t.id));
-    const pool = remainingTiles.map(t => ({ group: t.group, glyph: t.glyph }));
-    for (let i = pool.length - 1; i > 0; i--) {
-      const j = Math.floor(Math.random() * (i + 1));
-      [pool[i], pool[j]] = [pool[j], pool[i]];
-    }
-    const next = state.tiles.slice();
-    remainingTiles.forEach((t, i) => {
-      next[t.id] = { ...t, group: pool[i].group, glyph: pool[i].glyph };
-    });
-    const stuck = isStuck(next, state.removed);
+    const next = solvableShuffle(state.tiles, state.removed);
     setState({
       ...state,
       tiles: next,
       shufflesLeft: state.shufflesLeft - 1,
-      outcome: stuck ? 'stuck' : 'playing',
-      finishedAt: stuck ? Date.now() : null,
       score: Math.max(0, state.score - SHUFFLE_PENALTY),
     });
     setSelectedId(null);
