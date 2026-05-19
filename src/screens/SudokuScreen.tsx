@@ -34,6 +34,9 @@ import { useFeedback } from '@/feedback/useFeedback';
 import { usePreferences } from '@/prefs/PreferencesProvider';
 import { ResultModal } from '@/components/ResultModal';
 import { NameInputModal } from '@/components/NameInputModal';
+import { Onboarding } from '@/components/Onboarding';
+import { SUDOKU_ONBOARDING } from '@/onboarding/steps';
+import { useOnboarding } from '@/onboarding/useOnboarding';
 import { useNavigation } from '@react-navigation/native';
 
 type NavMode =
@@ -106,6 +109,7 @@ export function SudokuScreen({ mode: navMode }: Props) {
   const [resultVisible, setResultVisible] = useState(false);
   const [nameModalVisible, setNameModalVisible] = useState(false);
   const pendingDailyResultRef = React.useRef<{ timeMs: number; score: number } | null>(null);
+  const onboarding = useOnboarding('sudoku');
 
   const persistMode: PersistMode = useMemo(
     () => (navMode.kind === 'daily' ? { kind: 'daily' } : { kind: 'random' }),
@@ -525,6 +529,12 @@ export function SudokuScreen({ mode: navMode }: Props) {
         )}
       </ScrollView>
       <AdBanner />
+
+      <Onboarding
+        visible={onboarding.visible}
+        steps={SUDOKU_ONBOARDING}
+        onClose={onboarding.dismiss}
+      />
 
       <NameInputModal
         visible={nameModalVisible}

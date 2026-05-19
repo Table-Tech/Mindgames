@@ -25,6 +25,9 @@ import { useFeedback } from '@/feedback/useFeedback';
 import { usePreferences } from '@/prefs/PreferencesProvider';
 import { ResultModal } from '@/components/ResultModal';
 import { NameInputModal } from '@/components/NameInputModal';
+import { Onboarding } from '@/components/Onboarding';
+import { WORDLE_ONBOARDING } from '@/onboarding/steps';
+import { useOnboarding } from '@/onboarding/useOnboarding';
 import { useNavigation } from '@react-navigation/native';
 
 interface Props {
@@ -57,6 +60,7 @@ export function WordleScreen({ mode }: Props) {
   const [resultVisible, setResultVisible] = useState(false);
   const [nameModalVisible, setNameModalVisible] = useState(false);
   const pendingDailyRef = React.useRef<{ timeMs: number } | null>(null);
+  const onboarding = useOnboarding('wordle');
   const [toast, setToast] = useState<string | null>(null);
   const [now, setNow] = useState(Date.now());
   const finishHandled = useRef(false);
@@ -243,6 +247,12 @@ export function WordleScreen({ mode }: Props) {
         />
       </View>
       <AdBanner />
+
+      <Onboarding
+        visible={onboarding.visible}
+        steps={WORDLE_ONBOARDING}
+        onClose={onboarding.dismiss}
+      />
 
       <NameInputModal
         visible={nameModalVisible}

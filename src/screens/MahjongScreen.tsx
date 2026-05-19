@@ -31,6 +31,9 @@ import { useFeedback } from '@/feedback/useFeedback';
 import { usePreferences } from '@/prefs/PreferencesProvider';
 import { ResultModal } from '@/components/ResultModal';
 import { NameInputModal } from '@/components/NameInputModal';
+import { Onboarding } from '@/components/Onboarding';
+import { MAHJONG_ONBOARDING } from '@/onboarding/steps';
+import { useOnboarding } from '@/onboarding/useOnboarding';
 import { useNavigation } from '@react-navigation/native';
 
 const STARTING_HINTS = 3;
@@ -81,6 +84,7 @@ export function MahjongScreen({ mode }: Props) {
   const [resultVisible, setResultVisible] = useState(false);
   const [nameModalVisible, setNameModalVisible] = useState(false);
   const pendingDailyRef = React.useRef<{ timeMs: number } | null>(null);
+  const onboarding = useOnboarding('mahjong');
   const [selectedId, setSelectedId] = useState<number | null>(null);
   const [hintIds, setHintIds] = useState<Set<number>>(() => new Set());
   const [history, setHistory] = useState<Snapshot[]>([]);
@@ -375,6 +379,12 @@ export function MahjongScreen({ mode }: Props) {
         </View>
       </ScrollView>
       <AdBanner />
+
+      <Onboarding
+        visible={onboarding.visible}
+        steps={MAHJONG_ONBOARDING}
+        onClose={onboarding.dismiss}
+      />
 
       <NameInputModal
         visible={nameModalVisible}
