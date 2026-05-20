@@ -8,9 +8,7 @@ interface Saved extends Omit<MahjongState, 'removed'> {
 }
 
 function key(mode: MahjongMode): string {
-  return mode.kind === 'daily'
-    ? `mahjong.state.daily.${todayISO()}`
-    : 'mahjong.state.random';
+  return mode.kind === 'daily' ? `mahjong.state.daily.${todayISO()}` : 'mahjong.state.random';
 }
 
 export async function loadGame(mode: MahjongMode): Promise<MahjongState | null> {

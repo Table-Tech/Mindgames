@@ -43,13 +43,10 @@ export function ResultModal({
     <Modal transparent visible={visible} animationType="fade" onRequestClose={onDismiss}>
       <View style={styles.backdrop}>
         {won && <Confetti />}
-        <View style={[styles.card, { backgroundColor: colors.surface, borderColor: colors.border }]}>
-          <View
-            style={[
-              styles.iconWrap,
-              { backgroundColor: won ? '#4caf6f' : colors.surfaceAlt },
-            ]}
-          >
+        <View
+          style={[styles.card, { backgroundColor: colors.surface, borderColor: colors.border }]}
+        >
+          <View style={[styles.iconWrap, { backgroundColor: won ? '#4caf6f' : colors.surfaceAlt }]}>
             <Ionicons
               name={won ? 'trophy' : 'sad-outline'}
               size={32}
@@ -90,7 +87,10 @@ export function ResultModal({
             {share && (
               <Pressable
                 onPress={() => shareResult(share)}
-                style={[styles.secondaryBtn, { borderColor: colors.border, flexDirection: 'row', gap: 6 }]}
+                style={[
+                  styles.secondaryBtn,
+                  { borderColor: colors.border, flexDirection: 'row', gap: 6 },
+                ]}
               >
                 <Ionicons name="share-outline" size={16} color={colors.text} />
                 <Text style={{ color: colors.text }}>Share</Text>

@@ -36,9 +36,7 @@ export function StatsScreen() {
     <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
       <ScrollView contentContainerStyle={styles.scroll}>
         <Text style={[styles.title, { color: colors.text }]}>Statistics</Text>
-        <Text style={[styles.sub, { color: colors.textMuted }]}>
-          Stored on this device only
-        </Text>
+        <Text style={[styles.sub, { color: colors.textMuted }]}>Stored on this device only</Text>
 
         {GAMES.map(g => (
           <GameCard
@@ -131,12 +129,7 @@ function StatBox({ label, value, accent }: { label: string; value: string; accen
   return (
     <View style={styles.box}>
       <Text style={[styles.boxLabel, { color: colors.textMuted }]}>{label}</Text>
-      <Text
-        style={[
-          styles.boxValue,
-          { color: accent ? colors.accent : colors.text },
-        ]}
-      >
+      <Text style={[styles.boxValue, { color: accent ? colors.accent : colors.text }]}>
         {value}
       </Text>
     </View>

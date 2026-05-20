@@ -5,10 +5,7 @@ import type { Board } from './types';
 // excluded by row / column / 3x3 box constraints. Useful as a one-shot
 // "compute candidates" action; the player can then refine manually.
 
-export function autoPencil(
-  board: Board,
-  isLocked: (i: number) => boolean,
-): Set<number>[] {
+export function autoPencil(board: Board, isLocked: (i: number) => boolean): Set<number>[] {
   const notes: Set<number>[] = Array.from({ length: 81 }, () => new Set<number>());
   for (let i = 0; i < 81; i++) {
     if (board[i] !== 0) continue;

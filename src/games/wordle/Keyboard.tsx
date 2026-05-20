@@ -27,9 +27,16 @@ export function Keyboard({ letterStates, onKey, disabled }: Props) {
             const state = letterStates[k];
             let bg = colors.surfaceAlt;
             let fg = colors.text;
-            if (state === 'correct') { bg = '#4caf6f'; fg = '#fff'; }
-            else if (state === 'present') { bg = '#d9a93a'; fg = '#fff'; }
-            else if (state === 'absent') { bg = '#787c7e'; fg = '#fff'; }
+            if (state === 'correct') {
+              bg = '#4caf6f';
+              fg = '#fff';
+            } else if (state === 'present') {
+              bg = '#d9a93a';
+              fg = '#fff';
+            } else if (state === 'absent') {
+              bg = '#787c7e';
+              fg = '#fff';
+            }
 
             return (
               <Pressable

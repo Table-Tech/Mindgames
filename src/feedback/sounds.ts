@@ -1,4 +1,5 @@
-import { Audio } from 'expo-av';
+import { createAudioPlayer, setAudioModeAsync } from 'expo-audio';
+import type { AudioPlayer } from 'expo-audio';
 
 // Lightweight sound service. Drop .mp3 / .wav files into assets/sounds/ with
 // the keys below and they will be loaded on first use. If a file is missing
@@ -17,24 +18,24 @@ export type SoundKey = 'tap' | 'correct' | 'wrong' | 'win' | 'lose';
 // TODO(sounds): add actual audio files and uncomment these requires.
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 const SOURCES: Record<SoundKey, any | null> = {
-  tap: null,     // require('../../assets/sounds/tap.mp3'),
+  tap: null, // require('../../assets/sounds/tap.mp3'),
   correct: null, // require('../../assets/sounds/correct.mp3'),
-  wrong: null,   // require('../../assets/sounds/wrong.mp3'),
-  win: null,     // require('../../assets/sounds/win.mp3'),
-  lose: null,    // require('../../assets/sounds/lose.mp3'),
+  wrong: null, // require('../../assets/sounds/wrong.mp3'),
+  win: null, // require('../../assets/sounds/win.mp3'),
+  lose: null, // require('../../assets/sounds/lose.mp3'),
 };
 
-const cache = new Map<SoundKey, Audio.Sound>();
+const cache = new Map<SoundKey, AudioPlayer>();
 let audioModeConfigured = false;
 
 async function ensureAudioMode() {
   if (audioModeConfigured) return;
   audioModeConfigured = true;
   try {
-    await Audio.setAudioModeAsync({
-      playsInSilentModeIOS: false,
-      staysActiveInBackground: false,
-      shouldDuckAndroid: true,
+    await setAudioModeAsync({
+      playsInSilentMode: false,
+      shouldPlayInBackground: false,
+      interruptionMode: 'duckOthers',
     });
   } catch {
     // silent on platforms that don't support this
@@ -48,22 +49,25 @@ export async function playSound(key: SoundKey, enabled: boolean): Promise<void> 
 
   try {
     await ensureAudioMode();
-    let sound = cache.get(key);
-    if (!sound) {
-      const { sound: s } = await Audio.Sound.createAsync(source);
-      cache.set(key, s);
-      sound = s;
+    let player = cache.get(key);
+    if (!player) {
+      player = createAudioPlayer(source);
+      cache.set(key, player);
     }
-    await sound.setPositionAsync(0);
-    await sound.playAsync();
+    await player.seekTo(0);
+    player.play();
   } catch {
     // Audio errors are non-fatal; swallow.
   }
 }
 
 export async function unloadAllSounds(): Promise<void> {
-  for (const s of cache.values()) {
-    try { await s.unloadAsync(); } catch { /* ignore */ }
+  for (const p of cache.values()) {
+    try {
+      p.remove();
+    } catch {
+      /* ignore */
+    }
   }
   cache.clear();
 }

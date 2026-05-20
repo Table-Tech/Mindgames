@@ -18,11 +18,25 @@ export const haptics: Record<
   'light' | 'medium' | 'heavy' | 'success' | 'warning' | 'error' | 'selection',
   HapticFn
 > = {
-  light:     (enabled) => { if (enabled) safe(() => Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light)); },
-  medium:    (enabled) => { if (enabled) safe(() => Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium)); },
-  heavy:     (enabled) => { if (enabled) safe(() => Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy)); },
-  success:   (enabled) => { if (enabled) safe(() => Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success)); },
-  warning:   (enabled) => { if (enabled) safe(() => Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning)); },
-  error:     (enabled) => { if (enabled) safe(() => Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error)); },
-  selection: (enabled) => { if (enabled) safe(() => Haptics.selectionAsync()); },
+  light: enabled => {
+    if (enabled) safe(() => Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light));
+  },
+  medium: enabled => {
+    if (enabled) safe(() => Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium));
+  },
+  heavy: enabled => {
+    if (enabled) safe(() => Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy));
+  },
+  success: enabled => {
+    if (enabled) safe(() => Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success));
+  },
+  warning: enabled => {
+    if (enabled) safe(() => Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning));
+  },
+  error: enabled => {
+    if (enabled) safe(() => Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error));
+  },
+  selection: enabled => {
+    if (enabled) safe(() => Haptics.selectionAsync());
+  },
 };

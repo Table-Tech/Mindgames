@@ -13,7 +13,7 @@ export interface Preferences {
   wordleHardMode: boolean;
   // Notifications
   dailyReminderEnabled: boolean;
-  dailyReminderHour: number;   // 0..23
+  dailyReminderHour: number; // 0..23
   dailyReminderMinute: number; // 0..59
   // Username (cached so leaderboard doesn't prompt every time)
   playerName: string;
@@ -69,12 +69,9 @@ export function PreferencesProvider({ children }: { children: React.ReactNode })
     if (loaded) setJSON(KEY, prefs);
   }, [prefs, loaded]);
 
-  const setPref = useCallback(
-    <K extends keyof Preferences>(k: K, v: Preferences[K]) => {
-      setPrefs(p => ({ ...p, [k]: v }));
-    },
-    [],
-  );
+  const setPref = useCallback(<K extends keyof Preferences>(k: K, v: Preferences[K]) => {
+    setPrefs(p => ({ ...p, [k]: v }));
+  }, []);
 
   const markOnboardingSeen = useCallback((id: string) => {
     setPrefs(p => ({ ...p, onboardingSeen: { ...p.onboardingSeen, [id]: true } }));

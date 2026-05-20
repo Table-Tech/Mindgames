@@ -7,12 +7,15 @@ onboarding, notifications, share-results, save-and-resume, settings).
 
 ## Quick start
 
+The app uses native modules (`@react-native-firebase/*`, RevenueCat, static iOS frameworks), so
+**Expo Go is not supported** — you need a dev client. The day-to-day loop after the first build:
+
 ```bash
 npm install
-npx expo start
+npx expo start --dev-client    # scan the QR with the Mindgames dev client app
 ```
 
-Then press `i` for the iOS simulator, `a` for the Android emulator, or scan the QR with Expo Go.
+For the first install on each platform, see the platform sections below.
 
 ```bash
 npm run typecheck   # tsc --noEmit
@@ -20,6 +23,53 @@ npm run lint        # eslint
 npm run format      # prettier --write
 npm test            # jest
 ```
+
+### Android (Windows or Mac)
+
+Requires Android Studio with SDK Platform 36 + NDK installed, plus `JAVA_HOME` and `ANDROID_HOME`
+env vars set.
+
+```bash
+npx expo run:android   # builds + installs the dev client on emulator or USB device
+```
+
+After the first build, day-to-day you only need `npx expo start --dev-client` and the app picks
+up reload over the network.
+
+### iOS (Mac only — Windows can't sign or compile iOS)
+
+Requires macOS with Xcode (latest) and CocoaPods. The repo already has the Firebase config plugin
+wired up; you only need to drop the two secret files in the project root once (they are in
+`.gitignore`, so you must transfer them manually via 1Password / iCloud Drive / AirDrop — **never
+commit them**):
+
+```
+./GoogleService-Info.plist     # iOS Firebase config
+./google-services.json         # Android Firebase config (only used for Android builds)
+```
+
+Then on the Mac:
+
+```bash
+git clone <repo>
+cd Mindgames
+npm install
+# Drop GoogleService-Info.plist in project root here
+npx expo prebuild --platform ios --clean    # generates ios/ folder
+npx expo run:ios                            # simulator (no Apple ID needed, free, no expiry)
+```
+
+For a real iPhone with a **free Apple ID** (7-day app expiry, no push/IAP):
+
+```bash
+npx expo prebuild --platform ios --clean
+open ios/Mindgames.xcworkspace
+# In Xcode: select the Mindgames target → Signing & Capabilities
+# → set Team to your personal Apple ID → plug in iPhone over USB → press ▶
+```
+
+For a real iPhone with a **paid Apple Developer account** ($99/year — push + IAP + TestFlight):
+use `eas build --profile development --platform ios` instead.
 
 ## What's in the box
 
@@ -71,18 +121,38 @@ After install + EAS config:
 `getCustomerInfo`, `purchasePackage`, `restorePurchases`). Fill in the four TODO blocks with the
 real SDK calls. Product id is `remove_ads`, entitlement id is `no_ads`.
 
-### 3. Firebase (`@react-native-firebase/*`)
+### 3. Firebase (`@react-native-firebase/*`) — wired
 
-`src/cloud/firebase.ts` defines `initFirebase`, `getOrCreateUser`, `submitLeaderboardScore`,
-`fetchDailyLeaderboard`, `syncStatsTotals`. Each function is a typed no-op with the real
-Firestore call commented in-place. Suggested layout:
+`src/cloud/firebase.ts` uses the modular `@react-native-firebase` SDK (Auth + Firestore).
+Anonymous sign-in is lazy: the first `submitLeaderboardScore` or `syncStatsTotals` call triggers
+`signInAnonymously` with an in-flight dedupe so concurrent callers share one sign-in.
+
+Firestore layout:
 
 ```
 /leaderboards/{game}/days/{yyyy-mm-dd}/scores/{uid}
     { name, timeMs, guesses?, score?, createdAt: serverTimestamp() }
 /users/{uid}
-    { name, totals: { sudoku: {...}, wordle: {...}, mahjong: {...} } }
+    { totals: { sudoku: {...}, wordle: {...}, mahjong: {...} } }
 ```
+
+Security rules live in `firestore.rules` (paste into Firebase Console → Firestore → Rules, or
+`firebase deploy --only firestore:rules` if you set up the Firebase CLI). They allow:
+
+- signed-in reads of leaderboard scores
+- owner-only writes with shape validation (`timeMs` is a positive int < 24 h, `name` is a non-empty
+  string ≤ 32 chars)
+- owner-only read/write on `/users/{uid}`
+- default deny everywhere else
+
+To set up a Firebase project from scratch:
+
+1. Create project at https://console.firebase.google.com.
+2. Authentication → Sign-in method → enable **Anonymous**.
+3. Firestore Database → create in `eur3 (europe-west)` production mode → paste `firestore.rules`.
+4. Add Android app with package `com.mindgames.app` → download `google-services.json` to project root.
+5. Add iOS app with bundle id `com.mindgames.app` → download `GoogleService-Info.plist` to project root.
+6. Rebuild the dev client (`npx expo prebuild --clean && expo run:android` / `expo run:ios`).
 
 ### 4. Icons + splash + sound assets
 

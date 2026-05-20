@@ -22,11 +22,11 @@ export function useFeedback() {
   );
 
   return {
-    tap:     () => fire('selection', 'tap'),
+    tap: () => fire('selection', 'tap'),
     correct: () => fire('light', 'correct'),
-    wrong:   () => fire('warning', 'wrong'),
-    win:     () => fire('success', 'win'),
-    lose:    () => fire('error', 'lose'),
-    select:  () => fire('selection', null),
+    wrong: () => fire('warning', 'wrong'),
+    win: () => fire('success', 'win'),
+    lose: () => fire('error', 'lose'),
+    select: () => fire('selection', null),
   };
 }

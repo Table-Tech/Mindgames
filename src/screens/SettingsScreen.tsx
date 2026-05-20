@@ -138,7 +138,10 @@ export function SettingsScreen() {
               if (v) {
                 const granted = await ensurePermission();
                 if (!granted) {
-                  Alert.alert('Permission denied', 'Enable notifications for Mindgames in system settings to use reminders.');
+                  Alert.alert(
+                    'Permission denied',
+                    'Enable notifications for Mindgames in system settings to use reminders.',
+                  );
                   return;
                 }
                 await scheduleDailyReminder(prefs.dailyReminderHour, prefs.dailyReminderMinute);
@@ -208,13 +211,27 @@ export function SettingsScreen() {
         <Section title="Data" danger>
           <Pressable
             onPress={clearStats}
-            style={[styles.bigBtn, { backgroundColor: 'transparent', borderColor: colors.border, borderWidth: StyleSheet.hairlineWidth }]}
+            style={[
+              styles.bigBtn,
+              {
+                backgroundColor: 'transparent',
+                borderColor: colors.border,
+                borderWidth: StyleSheet.hairlineWidth,
+              },
+            ]}
           >
             <Text style={{ color: colors.text }}>Clear statistics</Text>
           </Pressable>
           <Pressable
             onPress={clearProgress}
-            style={[styles.bigBtn, { backgroundColor: 'transparent', borderColor: colors.error, borderWidth: StyleSheet.hairlineWidth }]}
+            style={[
+              styles.bigBtn,
+              {
+                backgroundColor: 'transparent',
+                borderColor: colors.error,
+                borderWidth: StyleSheet.hairlineWidth,
+              },
+            ]}
           >
             <Text style={{ color: colors.error }}>Clear all data</Text>
           </Pressable>
@@ -226,12 +243,24 @@ export function SettingsScreen() {
   );
 }
 
-function Section({ title, children }: { title: string; children: React.ReactNode; danger?: boolean }) {
+function Section({
+  title,
+  children,
+}: {
+  title: string;
+  children: React.ReactNode;
+  danger?: boolean;
+}) {
   const { colors } = useTheme();
   return (
     <View style={styles.section}>
       <Text style={[styles.sectionTitle, { color: colors.textMuted }]}>{title}</Text>
-      <View style={[styles.sectionBody, { backgroundColor: colors.surface, borderColor: colors.border }]}>
+      <View
+        style={[
+          styles.sectionBody,
+          { backgroundColor: colors.surface, borderColor: colors.border },
+        ]}
+      >
         {children}
       </View>
     </View>
@@ -248,7 +277,15 @@ function Row({ label, children }: { label: string; children: React.ReactNode }) 
   );
 }
 
-function SwitchRow({ label, value, onChange }: { label: string; value: boolean; onChange: (v: boolean) => void }) {
+function SwitchRow({
+  label,
+  value,
+  onChange,
+}: {
+  label: string;
+  value: boolean;
+  onChange: (v: boolean) => void;
+}) {
   return (
     <Row label={label}>
       <Switch value={value} onValueChange={onChange} />
@@ -267,7 +304,7 @@ function TimeStepper({
 }) {
   const { colors } = useTheme();
   const adjust = (h: number, m: number) => {
-    const total = ((h * 60 + m) % (24 * 60) + 24 * 60) % (24 * 60);
+    const total = (((h * 60 + m) % (24 * 60)) + 24 * 60) % (24 * 60);
     onChange(Math.floor(total / 60), total % 60);
   };
   const Step = ({ icon, onPress }: { icon: 'remove' | 'add'; onPress: () => void }) => (
@@ -305,7 +342,12 @@ const styles = StyleSheet.create({
   scroll: { padding: 16, gap: 18 },
   title: { fontSize: 28, fontWeight: '800' },
   section: { gap: 6 },
-  sectionTitle: { fontSize: 12, letterSpacing: 0.6, textTransform: 'uppercase', paddingHorizontal: 4 },
+  sectionTitle: {
+    fontSize: 12,
+    letterSpacing: 0.6,
+    textTransform: 'uppercase',
+    paddingHorizontal: 4,
+  },
   sectionBody: {
     borderRadius: 12,
     borderWidth: StyleSheet.hairlineWidth,

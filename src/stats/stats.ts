@@ -10,9 +10,9 @@ export interface FinishRecord {
   mode: GameMode;
   outcome: GameOutcome;
   timeMs: number;
-  date: string;          // yyyy-mm-dd in UTC
-  difficulty?: string;   // sudoku
-  guesses?: number;      // wordle
+  date: string; // yyyy-mm-dd in UTC
+  difficulty?: string; // sudoku
+  guesses?: number; // wordle
   score?: number;
 }
 
@@ -33,11 +33,11 @@ export interface GameStats {
   won: number;
   bestTimeMs: number | null;
   avgTimeMs: number | null;
-  currentStreak: number;     // consecutive days of daily wins up to today
-  bestStreak: number;        // longest streak ever
+  currentStreak: number; // consecutive days of daily wins up to today
+  bestStreak: number; // longest streak ever
   // Wordle-specific:
   avgGuesses: number | null;
-  guessHistogram: number[];  // index 0..5 for 1..6 guesses
+  guessHistogram: number[]; // index 0..5 for 1..6 guesses
 }
 
 function isoOffset(iso: string, days: number): string {
@@ -102,9 +102,7 @@ export function computeStats(records: FinishRecord[], game: GameId): GameStats {
   const avgTimeMs = wins.length ? Math.round(totalTime / wins.length) : null;
 
   // Daily streaks (one entry per date; latest counts).
-  const dailyWinDates = new Set(
-    wins.filter(r => r.mode === 'daily').map(r => r.date),
-  );
+  const dailyWinDates = new Set(wins.filter(r => r.mode === 'daily').map(r => r.date));
   const sorted = Array.from(dailyWinDates).sort();
   let bestStreak = 0;
   let run = 0;

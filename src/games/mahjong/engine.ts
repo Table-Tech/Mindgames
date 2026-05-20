@@ -9,9 +9,9 @@ export function isFree(tile: Tile, remaining: Set<number>, byKey: Map<string, Ti
   const above = byKey.get(posKey({ x: tile.pos.x, y: tile.pos.y, z: tile.pos.z + 1 }));
   if (above && remaining.has(above.id)) return false;
 
-  const left  = byKey.get(posKey({ x: tile.pos.x - 1, y: tile.pos.y, z: tile.pos.z }));
+  const left = byKey.get(posKey({ x: tile.pos.x - 1, y: tile.pos.y, z: tile.pos.z }));
   const right = byKey.get(posKey({ x: tile.pos.x + 1, y: tile.pos.y, z: tile.pos.z }));
-  const leftBlocked  = !!(left  && remaining.has(left.id));
+  const leftBlocked = !!(left && remaining.has(left.id));
   const rightBlocked = !!(right && remaining.has(right.id));
   return !(leftBlocked && rightBlocked);
 }
@@ -63,9 +63,9 @@ export function generateMahjong(seed: number): Tile[] {
     const p = positionsById.get(id)!;
     const above = byKey.get(posKey({ x: p.x, y: p.y, z: p.z + 1 }));
     if (above && remaining.has(above.id)) return false;
-    const left  = byKey.get(posKey({ x: p.x - 1, y: p.y, z: p.z }));
+    const left = byKey.get(posKey({ x: p.x - 1, y: p.y, z: p.z }));
     const right = byKey.get(posKey({ x: p.x + 1, y: p.y, z: p.z }));
-    const lb = !!(left  && remaining.has(left.id));
+    const lb = !!(left && remaining.has(left.id));
     const rb = !!(right && remaining.has(right.id));
     return !(lb && rb);
   };
@@ -114,7 +114,7 @@ export function generateMahjong(seed: number): Tile[] {
 // solvable. Uses the same reverse-build trick as generateMahjong but on the
 // sub-layout that's still on the board.
 export function solvableShuffle(tiles: Tile[], removed: Set<number>, seed?: number): Tile[] {
-  const rand = mulberry32(seed ?? ((Math.random() * 0xffffffff) >>> 0) || 1);
+  const rand = mulberry32((seed ?? (Math.random() * 0xffffffff) >>> 0) || 1);
   const remainingTiles = tiles.filter(t => !removed.has(t.id));
   if (remainingTiles.length === 0) return tiles.slice();
 
@@ -133,9 +133,9 @@ export function solvableShuffle(tiles: Tile[], removed: Set<number>, seed?: numb
     const p = positionsById.get(id)!;
     const above = byKey.get(posKey({ x: p.x, y: p.y, z: p.z + 1 }));
     if (above && remainingSet.has(above.id)) return false;
-    const left  = byKey.get(posKey({ x: p.x - 1, y: p.y, z: p.z }));
+    const left = byKey.get(posKey({ x: p.x - 1, y: p.y, z: p.z }));
     const right = byKey.get(posKey({ x: p.x + 1, y: p.y, z: p.z }));
-    const lb = !!(left  && remainingSet.has(left.id));
+    const lb = !!(left && remainingSet.has(left.id));
     const rb = !!(right && remainingSet.has(right.id));
     return !(lb && rb);
   };

@@ -16,3 +16,5 @@ android/
 .env.local
 coverage/
 .jest-cache/
+google-services.json
+GoogleService-Info.plist

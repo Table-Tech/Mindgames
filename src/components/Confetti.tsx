@@ -12,11 +12,7 @@ interface Props {
 
 const DEFAULT_COLORS = ['#3478f6', '#4caf6f', '#d9a93a', '#d64545', '#9c5dd1'];
 
-export function Confetti({
-  count = 60,
-  duration = 2400,
-  colors = DEFAULT_COLORS,
-}: Props) {
+export function Confetti({ count = 60, duration = 2400, colors = DEFAULT_COLORS }: Props) {
   const { width, height } = Dimensions.get('window');
 
   // Generate once; identity (positions, delays, etc.) stays stable across re-renders.

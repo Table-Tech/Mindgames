@@ -1,13 +1,5 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import {
-  Alert,
-  Platform,
-  Pressable,
-  ScrollView,
-  StyleSheet,
-  Text,
-  View,
-} from 'react-native';
+import { Alert, Platform, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '@/theme/ThemeProvider';
@@ -100,8 +92,7 @@ export function MahjongScreen({ mode }: Props) {
       const saved = await loadGame(mode);
       if (cancelled) return;
       const stillTodaysDaily =
-        mode.kind !== 'daily' ||
-        (saved && saved.startedAt > Date.now() - 36 * 3600 * 1000);
+        mode.kind !== 'daily' || (saved && saved.startedAt > Date.now() - 36 * 3600 * 1000);
       if (saved && stillTodaysDaily) {
         setState(saved);
         finishHandled.current = saved.outcome !== 'playing';
@@ -283,10 +274,7 @@ export function MahjongScreen({ mode }: Props) {
     finishHandled.current = false;
   };
 
-  const remaining = useMemo(
-    () => (state ? state.tiles.length - state.removed.size : 0),
-    [state],
-  );
+  const remaining = useMemo(() => (state ? state.tiles.length - state.removed.size : 0), [state]);
   const freeCount = useMemo(
     () => (state ? freeTiles(state.tiles, state.removed).length : 0),
     [state],
@@ -381,7 +369,13 @@ export function MahjongScreen({ mode }: Props) {
           const finalName = name || 'Anon';
           setPref('playerName', name);
           const r = pendingDailyRef.current;
-          if (r) await submitScore({ name: finalName, timeMs: r.timeMs, date: todayISO(), game: 'mahjong' });
+          if (r)
+            await submitScore({
+              name: finalName,
+              timeMs: r.timeMs,
+              date: todayISO(),
+              game: 'mahjong',
+            });
           setResultVisible(true);
         }}
         onDismiss={() => {
@@ -414,7 +408,14 @@ export function MahjongScreen({ mode }: Props) {
           else navigation.goBack();
         }}
         secondaryLabel={mode.kind === 'random' ? 'Back to menu' : undefined}
-        onSecondary={mode.kind === 'random' ? () => { setResultVisible(false); navigation.goBack(); } : undefined}
+        onSecondary={
+          mode.kind === 'random'
+            ? () => {
+                setResultVisible(false);
+                navigation.goBack();
+              }
+            : undefined
+        }
       />
     </SafeAreaView>
   );

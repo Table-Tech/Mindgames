@@ -8,13 +8,13 @@ export type SudokuOutcome = 'playing' | 'won' | 'lost';
 // Sets (notes, hintLocked, wrong) are stored as arrays.
 export interface SudokuPersistedState {
   difficulty: Difficulty;
-  given: number[];           // length 81
-  solution: number[];        // length 81
+  given: number[]; // length 81
+  solution: number[]; // length 81
   seed: number;
-  board: number[];           // length 81
-  notes: number[][];         // 81 arrays of digits 1..9
-  hintLocked: number[];      // cell indices
-  wrong: number[];           // cell indices
+  board: number[]; // length 81
+  notes: number[][]; // 81 arrays of digits 1..9
+  hintLocked: number[]; // cell indices
+  wrong: number[]; // cell indices
   mistakes: number;
   hintsLeft: number;
   score: number;
@@ -23,14 +23,10 @@ export interface SudokuPersistedState {
   outcome: SudokuOutcome;
 }
 
-export type SudokuMode =
-  | { kind: 'random' }
-  | { kind: 'daily' };
+export type SudokuMode = { kind: 'random' } | { kind: 'daily' };
 
 function key(mode: SudokuMode): string {
-  return mode.kind === 'daily'
-    ? `sudoku.state.daily.${todayISO()}`
-    : 'sudoku.state.practice';
+  return mode.kind === 'daily' ? `sudoku.state.daily.${todayISO()}` : 'sudoku.state.practice';
 }
 
 export async function loadSudoku(mode: SudokuMode): Promise<SudokuPersistedState | null> {

@@ -33,7 +33,9 @@ export function SudokuBoard({ board, given, notes, selected, wrong, hidden, onSe
             const isSelected = selected === i;
             const inPeer =
               !isSelected &&
-              (r === selRow || c === selCol || Math.floor(r / 3) * 3 + Math.floor(c / 3) === selBox);
+              (r === selRow ||
+                c === selCol ||
+                Math.floor(r / 3) * 3 + Math.floor(c / 3) === selBox);
             const sameNumber = !isSelected && val !== 0 && val === selectedVal;
             const isWrong = wrong.has(i);
 

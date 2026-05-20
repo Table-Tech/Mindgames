@@ -101,6 +101,6 @@ export function dailyAnswer(date = new Date()): string {
 }
 
 export function randomAnswer(): string {
-  const rand = mulberry32(((Math.random() * 0xffffffff) >>> 0) || 1);
+  const rand = mulberry32((Math.random() * 0xffffffff) >>> 0 || 1);
   return WORDS[Math.floor(rand() * WORDS.length)];
 }

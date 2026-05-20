@@ -13,7 +13,9 @@ export function AdBanner() {
   const { adsRemoved } = useEntitlements();
   if (adsRemoved) return null;
   return (
-    <View style={[styles.banner, { backgroundColor: colors.surfaceAlt, borderColor: colors.border }]}>
+    <View
+      style={[styles.banner, { backgroundColor: colors.surfaceAlt, borderColor: colors.border }]}
+    >
       <Text style={{ color: colors.textMuted, fontSize: 12 }}>Ad slot (AdMob banner)</Text>
     </View>
   );

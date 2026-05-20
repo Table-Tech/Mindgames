@@ -9,7 +9,7 @@ describe('Sudoku solver', () => {
     expect(isSafe(board, 0, 8, 5)).toBe(false); // same row
     expect(isSafe(board, 8, 0, 5)).toBe(false); // same column
     expect(isSafe(board, 2, 2, 5)).toBe(false); // same 3x3 box
-    expect(isSafe(board, 3, 3, 5)).toBe(true);  // unrelated cell
+    expect(isSafe(board, 3, 3, 5)).toBe(true); // unrelated cell
   });
 
   it('solves an easy puzzle', () => {

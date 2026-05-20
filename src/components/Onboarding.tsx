@@ -35,7 +35,9 @@ export function Onboarding({ visible, steps, onClose }: Props) {
   return (
     <Modal transparent visible={visible} animationType="fade" onRequestClose={onClose}>
       <View style={styles.backdrop}>
-        <View style={[styles.card, { backgroundColor: colors.surface, borderColor: colors.border }]}>
+        <View
+          style={[styles.card, { backgroundColor: colors.surface, borderColor: colors.border }]}
+        >
           <View style={[styles.iconWrap, { backgroundColor: colors.accent }]}>
             <Ionicons name={step.icon} size={32} color="#fff" />
           </View>

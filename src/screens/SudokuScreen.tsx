@@ -40,9 +40,7 @@ import { SUDOKU_ONBOARDING } from '@/onboarding/steps';
 import { useOnboarding } from '@/onboarding/useOnboarding';
 import { useNavigation } from '@react-navigation/native';
 
-type NavMode =
-  | { kind: 'random'; difficulty: Difficulty }
-  | { kind: 'daily' };
+type NavMode = { kind: 'random'; difficulty: Difficulty } | { kind: 'daily' };
 
 interface Props {
   mode: NavMode;
@@ -76,10 +74,7 @@ function arraysToNotes(arr: number[][]): Notes {
   return arr.map(a => new Set(a));
 }
 
-function freshState(
-  navMode: NavMode,
-  difficultyOverride?: Difficulty,
-): SudokuPersistedState {
+function freshState(navMode: NavMode, difficultyOverride?: Difficulty): SudokuPersistedState {
   const difficulty =
     difficultyOverride ?? (navMode.kind === 'random' ? navMode.difficulty : 'medium');
   const puzzle = navMode.kind === 'daily' ? dailyPuzzle() : randomPuzzle(difficulty);
@@ -168,14 +163,8 @@ export function SudokuScreen({ mode: navMode }: Props) {
   }, [state?.outcome, state?.paused, !!state]);
 
   const wrongSet = useMemo(() => new Set(state?.wrong ?? []), [state?.wrong]);
-  const hintLockedSet = useMemo(
-    () => new Set(state?.hintLocked ?? []),
-    [state?.hintLocked],
-  );
-  const notes = useMemo(
-    () => (state ? arraysToNotes(state.notes) : emptyNotes()),
-    [state?.notes],
-  );
+  const hintLockedSet = useMemo(() => new Set(state?.hintLocked ?? []), [state?.hintLocked]);
+  const notes = useMemo(() => (state ? arraysToNotes(state.notes) : emptyNotes()), [state?.notes]);
 
   const isLocked = useCallback(
     (i: number) => !!state && (state.given[i] !== 0 || hintLockedSet.has(i)),
@@ -224,7 +213,12 @@ export function SudokuScreen({ mode: navMode }: Props) {
           setNameModalVisible(true);
           return;
         }
-        await submitScore({ name: prefs.playerName, timeMs: finalElapsed, date: todayISO(), game: 'sudoku' });
+        await submitScore({
+          name: prefs.playerName,
+          timeMs: finalElapsed,
+          date: todayISO(),
+          game: 'sudoku',
+        });
       }
       setResultVisible(true);
     },
@@ -400,19 +394,20 @@ export function SudokuScreen({ mode: navMode }: Props) {
   );
 
   const promptNewGame = () => {
-    Alert.alert(
-      'New game',
-      'Start a new puzzle? Current progress will be lost.',
-      [
-        { text: 'Cancel', style: 'cancel' },
-        { text: 'New game', onPress: () => startNewGame() },
-      ],
-    );
+    Alert.alert('New game', 'Start a new puzzle? Current progress will be lost.', [
+      { text: 'Cancel', style: 'cancel' },
+      { text: 'New game', onPress: () => startNewGame() },
+    ]);
   };
 
   if (loading || !state) {
     return (
-      <SafeAreaView style={[styles.container, { backgroundColor: colors.background, alignItems: 'center', justifyContent: 'center' }]}>
+      <SafeAreaView
+        style={[
+          styles.container,
+          { backgroundColor: colors.background, alignItems: 'center', justifyContent: 'center' },
+        ]}
+      >
         <ActivityIndicator size="large" color={colors.accent} />
         <Text style={{ color: colors.textMuted, marginTop: 12 }}>Generating puzzle…</Text>
       </SafeAreaView>
@@ -510,11 +505,7 @@ export function SudokuScreen({ mode: navMode }: Props) {
             disabled={state.hintsLeft === 0}
             onPress={useHint}
           />
-          <ActionButton
-            icon="sparkles-outline"
-            label="Auto"
-            onPress={fillAutoPencil}
-          />
+          <ActionButton icon="sparkles-outline" label="Auto" onPress={fillAutoPencil} />
         </View>
 
         <View style={styles.pad}>
@@ -560,7 +551,13 @@ export function SudokuScreen({ mode: navMode }: Props) {
           const finalName = name || 'Anon';
           setPref('playerName', name);
           const r = pendingDailyResultRef.current;
-          if (r) await submitScore({ name: finalName, timeMs: r.timeMs, date: todayISO(), game: 'sudoku' });
+          if (r)
+            await submitScore({
+              name: finalName,
+              timeMs: r.timeMs,
+              date: todayISO(),
+              game: 'sudoku',
+            });
           setResultVisible(true);
         }}
         onDismiss={() => {
@@ -600,7 +597,14 @@ export function SudokuScreen({ mode: navMode }: Props) {
           else navigation.goBack();
         }}
         secondaryLabel={navMode.kind === 'random' ? 'Back to menu' : undefined}
-        onSecondary={navMode.kind === 'random' ? () => { setResultVisible(false); navigation.goBack(); } : undefined}
+        onSecondary={
+          navMode.kind === 'random'
+            ? () => {
+                setResultVisible(false);
+                navigation.goBack();
+              }
+            : undefined
+        }
       />
     </SafeAreaView>
   );

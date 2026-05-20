@@ -409,8 +409,7 @@ zilch zinc zonal zones zoned
 `;
 
 const SET = new Set(
-  RAW
-    .split(/\s+/)
+  RAW.split(/\s+/)
     .map(w => w.trim().toLowerCase())
     .filter(w => w.length === 5),
 );

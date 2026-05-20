@@ -4,16 +4,14 @@ import type { Guess } from '@/games/wordle/types';
 const SQUARES: Record<string, string> = {
   correct: '\u{1F7E9}', // 🟩
   present: '\u{1F7E8}', // 🟨
-  absent:  '\u{2B1B}',  // ⬛ (works for both light and dark; could swap to ⬜ if you want)
+  absent: '\u{2B1B}', // ⬛ (works for both light and dark; could swap to ⬜ if you want)
 };
 
 export function wordleShareText(guesses: Guess[], maxGuesses: number, dayLabel: string): string {
   const tries = guesses.length;
   const solved = guesses[guesses.length - 1]?.states.every(s => s === 'correct') ?? false;
   const head = `Mindgames Wordle ${dayLabel} ${solved ? tries : 'X'}/${maxGuesses}`;
-  const grid = guesses
-    .map(g => g.states.map(s => SQUARES[s] ?? '⬛').join(''))
-    .join('\n');
+  const grid = guesses.map(g => g.states.map(s => SQUARES[s] ?? '⬛').join('')).join('\n');
   return `${head}\n\n${grid}`;
 }
 

@@ -37,17 +37,11 @@ export function WordleGrid({ guesses, current }: Props) {
           {row.letters.map((ch, ci) => {
             const filled = ch.trim().length > 0;
             const bg = colorFor(row.states[ci], colors);
-            const border =
-              row.states[ci] === 'pending' && filled ? colors.text : colors.border;
+            const border = row.states[ci] === 'pending' && filled ? colors.text : colors.border;
             const fg =
-              row.states[ci] === 'empty' || row.states[ci] === 'pending'
-                ? colors.text
-                : '#fff';
+              row.states[ci] === 'empty' || row.states[ci] === 'pending' ? colors.text : '#fff';
             return (
-              <View
-                key={ci}
-                style={[styles.tile, { backgroundColor: bg, borderColor: border }]}
-              >
+              <View key={ci} style={[styles.tile, { backgroundColor: bg, borderColor: border }]}>
                 <Text style={[styles.letter, { color: fg }]}>{ch.trim()}</Text>
               </View>
             );
@@ -60,12 +54,17 @@ export function WordleGrid({ guesses, current }: Props) {
 
 function colorFor(state: LetterState, colors: ReturnType<typeof useTheme>['colors']) {
   switch (state) {
-    case 'correct': return '#4caf6f';
-    case 'present': return '#d9a93a';
-    case 'absent':  return '#787c7e';
-    case 'pending': return colors.surface;
+    case 'correct':
+      return '#4caf6f';
+    case 'present':
+      return '#d9a93a';
+    case 'absent':
+      return '#787c7e';
+    case 'pending':
+      return colors.surface;
     case 'empty':
-    default:        return colors.surface;
+    default:
+      return colors.surface;
   }
 }
 

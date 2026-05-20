@@ -7,9 +7,18 @@ import { computeStats, getRecords, type GameId } from '@/stats/stats';
 // enough to tell the home screen whether a daily / random game can be
 // resumed and whether today's daily has already been finished.
 
-interface SudokuSaved { outcome: 'playing' | 'won' | 'lost'; elapsedMs?: number }
-interface WordleSaved { outcome: 'playing' | 'won' | 'lost'; guesses?: unknown[] }
-interface MahjongSaved { outcome: 'playing' | 'won' | 'stuck'; removed?: number[] }
+interface SudokuSaved {
+  outcome: 'playing' | 'won' | 'lost';
+  elapsedMs?: number;
+}
+interface WordleSaved {
+  outcome: 'playing' | 'won' | 'lost';
+  guesses?: unknown[];
+}
+interface MahjongSaved {
+  outcome: 'playing' | 'won' | 'stuck';
+  removed?: number[];
+}
 
 export interface DailyStatus {
   done: boolean;
@@ -70,8 +79,20 @@ export async function loadHomeStatus(): Promise<HomeStatus> {
   const streakOf = (g: GameId) => computeStats(records, g).currentStreak;
 
   return {
-    sudoku:  { daily: sudokuDaily,  resume: { hasPractice: sudokuPractice  }, streak: streakOf('sudoku')  },
-    wordle:  { daily: wordleDaily,  resume: { hasPractice: wordlePractice  }, streak: streakOf('wordle')  },
-    mahjong: { daily: mahjongDaily, resume: { hasPractice: mahjongPractice }, streak: streakOf('mahjong') },
+    sudoku: {
+      daily: sudokuDaily,
+      resume: { hasPractice: sudokuPractice },
+      streak: streakOf('sudoku'),
+    },
+    wordle: {
+      daily: wordleDaily,
+      resume: { hasPractice: wordlePractice },
+      streak: streakOf('wordle'),
+    },
+    mahjong: {
+      daily: mahjongDaily,
+      resume: { hasPractice: mahjongPractice },
+      streak: streakOf('mahjong'),
+    },
   };
 }

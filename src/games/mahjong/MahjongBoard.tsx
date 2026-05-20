@@ -7,8 +7,8 @@ import type { Tile } from './types';
 
 const TILE_W = 30;
 const TILE_H = 38;
-const Z_OFFSET_X = 4;   // each layer shifts right
-const Z_OFFSET_Y = -4;  // and up, giving a 3D look
+const Z_OFFSET_X = 4; // each layer shifts right
+const Z_OFFSET_Y = -4; // and up, giving a 3D look
 
 interface Props {
   tiles: Tile[];
@@ -48,7 +48,7 @@ export function MahjongBoard({ tiles, removed, selectedId, hintIds, onSelect }: 
         const isSelected = selectedId === t.id;
         const isHint = hintIds.has(t.id);
         const left = t.pos.x * TILE_W + t.pos.z * Z_OFFSET_X;
-        const top = t.pos.y * TILE_H + (MAX_Z * -Z_OFFSET_Y) + t.pos.z * Z_OFFSET_Y;
+        const top = t.pos.y * TILE_H + MAX_Z * -Z_OFFSET_Y + t.pos.z * Z_OFFSET_Y;
         const zIndex = t.pos.z * 100 + t.pos.y * 10 + t.pos.x;
 
         const baseBg = isDark ? '#1f232c' : '#fbf6e9';

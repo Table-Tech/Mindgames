@@ -1,17 +1,16 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import {
-  Alert,
-  Platform,
-  Pressable,
-  StyleSheet,
-  Text,
-  View,
-} from 'react-native';
+import { Alert, Platform, Pressable, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useTheme } from '@/theme/ThemeProvider';
 import { WordleGrid } from '@/games/wordle/WordleGrid';
 import { Keyboard } from '@/games/wordle/Keyboard';
-import { dailyAnswer, evaluate, keyboardStates, randomAnswer, violatesHardMode } from '@/games/wordle/engine';
+import {
+  dailyAnswer,
+  evaluate,
+  keyboardStates,
+  randomAnswer,
+  violatesHardMode,
+} from '@/games/wordle/engine';
 import { isValidWord } from '@/games/wordle/words';
 import { clearGame, loadGame, saveGame } from '@/games/wordle/persistence';
 import type { Guess, WordleMode, WordleState } from '@/games/wordle/types';
@@ -100,10 +99,7 @@ export function WordleScreen({ mode }: Props) {
     saveGame(mode, state);
   }, [mode, state]);
 
-  const letterStates = useMemo(
-    () => (state ? keyboardStates(state.guesses) : {}),
-    [state],
-  );
+  const letterStates = useMemo(() => (state ? keyboardStates(state.guesses) : {}), [state]);
 
   const showToast = (msg: string) => {
     setToast(msg);
@@ -272,7 +268,13 @@ export function WordleScreen({ mode }: Props) {
           const finalName = name || 'Anon';
           setPref('playerName', name);
           const r = pendingDailyRef.current;
-          if (r) await submitScore({ name: finalName, timeMs: r.timeMs, date: todayISO(), game: 'wordle' });
+          if (r)
+            await submitScore({
+              name: finalName,
+              timeMs: r.timeMs,
+              date: todayISO(),
+              game: 'wordle',
+            });
           setResultVisible(true);
         }}
         onDismiss={() => {
@@ -312,7 +314,14 @@ export function WordleScreen({ mode }: Props) {
           }
         }}
         secondaryLabel={mode.kind === 'random' ? 'Back to menu' : undefined}
-        onSecondary={mode.kind === 'random' ? () => { setResultVisible(false); navigation.goBack(); } : undefined}
+        onSecondary={
+          mode.kind === 'random'
+            ? () => {
+                setResultVisible(false);
+                navigation.goBack();
+              }
+            : undefined
+        }
       />
     </SafeAreaView>
   );

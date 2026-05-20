@@ -19,8 +19,14 @@ export function HomeScreen({ navigation }: Props) {
     setStatus(await loadHomeStatus());
   }, []);
 
-  useEffect(() => { refresh(); }, [refresh]);
-  useFocusEffect(useCallback(() => { refresh(); }, [refresh]));
+  useEffect(() => {
+    refresh();
+  }, [refresh]);
+  useFocusEffect(
+    useCallback(() => {
+      refresh();
+    }, [refresh]),
+  );
 
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
@@ -61,7 +67,9 @@ export function HomeScreen({ navigation }: Props) {
           label="Sudoku"
           sub="6 difficulties · hints · undo"
           resumable={status?.sudoku.resume.hasPractice}
-          onPress={() => navigation.navigate('Sudoku', { mode: { kind: 'random', difficulty: 'medium' } })}
+          onPress={() =>
+            navigation.navigate('Sudoku', { mode: { kind: 'random', difficulty: 'medium' } })
+          }
         />
         <PracticeCard
           label="Wordle"
@@ -77,9 +85,21 @@ export function HomeScreen({ navigation }: Props) {
         />
 
         <View style={styles.bottomRow}>
-          <LinkBtn icon="stats-chart-outline" label="Stats" onPress={() => navigation.navigate('Stats')} />
-          <LinkBtn icon="trophy-outline" label="Leaderboard" onPress={() => navigation.navigate('Leaderboard')} />
-          <LinkBtn icon="settings-outline" label="Settings" onPress={() => navigation.navigate('Settings')} />
+          <LinkBtn
+            icon="stats-chart-outline"
+            label="Stats"
+            onPress={() => navigation.navigate('Stats')}
+          />
+          <LinkBtn
+            icon="trophy-outline"
+            label="Leaderboard"
+            onPress={() => navigation.navigate('Leaderboard')}
+          />
+          <LinkBtn
+            icon="settings-outline"
+            label="Settings"
+            onPress={() => navigation.navigate('Settings')}
+          />
         </View>
       </ScrollView>
       <AdBanner />
@@ -107,12 +127,13 @@ function DailyRow({ label, status, streak, onPress }: DailyRowProps) {
       : 'new';
 
   const icon =
-    tone === 'done' ? 'checkmark-circle' :
-    tone === 'progress' ? 'time-outline' : 'sparkles-outline';
+    tone === 'done'
+      ? 'checkmark-circle'
+      : tone === 'progress'
+        ? 'time-outline'
+        : 'sparkles-outline';
 
-  const iconColor =
-    tone === 'done' ? '#4caf6f' :
-    tone === 'progress' ? '#d9a93a' : '#fff';
+  const iconColor = tone === 'done' ? '#4caf6f' : tone === 'progress' ? '#d9a93a' : '#fff';
 
   return (
     <Pressable
@@ -132,14 +153,13 @@ function DailyRow({ label, status, streak, onPress }: DailyRowProps) {
             {label}
           </Text>
           <Text
-            style={[
-              styles.dailySub,
-              { color: tone === 'new' ? '#ffffffcc' : colors.textMuted },
-            ]}
+            style={[styles.dailySub, { color: tone === 'new' ? '#ffffffcc' : colors.textMuted }]}
           >
-            {tone === 'done' ? 'Completed today' :
-             tone === 'progress' ? 'Continue today\'s puzzle' :
-             'Play today\'s puzzle'}
+            {tone === 'done'
+              ? 'Completed today'
+              : tone === 'progress'
+                ? "Continue today's puzzle"
+                : "Play today's puzzle"}
           </Text>
         </View>
       </View>
@@ -183,7 +203,15 @@ function PracticeCard({ label, sub, resumable, onPress }: PracticeCardProps) {
   );
 }
 
-function LinkBtn({ icon, label, onPress }: { icon: keyof typeof Ionicons.glyphMap; label: string; onPress: () => void }) {
+function LinkBtn({
+  icon,
+  label,
+  onPress,
+}: {
+  icon: keyof typeof Ionicons.glyphMap;
+  label: string;
+  onPress: () => void;
+}) {
   const { colors } = useTheme();
   return (
     <Pressable onPress={onPress} style={[styles.linkBtn, { borderColor: colors.border }]}>

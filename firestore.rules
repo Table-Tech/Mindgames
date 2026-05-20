@@ -1,0 +1,37 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isOwner(uid) {
+      return isSignedIn() && request.auth.uid == uid;
+    }
+
+    function validScore() {
+      return request.resource.data.timeMs is int
+        && request.resource.data.timeMs > 0
+        && request.resource.data.timeMs < 86400000
+        && request.resource.data.name is string
+        && request.resource.data.name.size() > 0
+        && request.resource.data.name.size() <= 32;
+    }
+
+    match /leaderboards/{game}/days/{date}/scores/{uid} {
+      allow read: if isSignedIn();
+      allow create: if isOwner(uid) && validScore();
+      allow update: if isOwner(uid) && validScore();
+      allow delete: if false;
+    }
+
+    match /users/{uid} {
+      allow read, write: if isOwner(uid);
+    }
+
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}

@@ -8,10 +8,10 @@ export interface ThemeColors {
   accent: string;
   accentMuted: string;
   error: string;
-  given: string;        // background for given (immutable) Sudoku cells
-  selection: string;    // selected cell
-  highlight: string;    // same row/col/box highlight
-  sameNumber: string;   // cells with the same number as selected
+  given: string; // background for given (immutable) Sudoku cells
+  selection: string; // selected cell
+  highlight: string; // same row/col/box highlight
+  sameNumber: string; // cells with the same number as selected
 }
 
 export const lightTheme: ThemeColors = {

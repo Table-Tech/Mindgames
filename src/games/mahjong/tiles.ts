@@ -14,15 +14,53 @@ function uniform(glyph: string): [string, string, string, string] {
   return [glyph, glyph, glyph, glyph];
 }
 
-const CHARACTERS = ['\u{1F007}', '\u{1F008}', '\u{1F009}', '\u{1F00A}', '\u{1F00B}', '\u{1F00C}', '\u{1F00D}', '\u{1F00E}', '\u{1F00F}'];
-const BAMBOO     = ['\u{1F010}', '\u{1F011}', '\u{1F012}', '\u{1F013}', '\u{1F014}', '\u{1F015}', '\u{1F016}', '\u{1F017}', '\u{1F018}'];
-const DOTS       = ['\u{1F019}', '\u{1F01A}', '\u{1F01B}', '\u{1F01C}', '\u{1F01D}', '\u{1F01E}', '\u{1F01F}', '\u{1F020}', '\u{1F021}'];
-const WINDS      = ['\u{1F000}', '\u{1F001}', '\u{1F002}', '\u{1F003}'];
-const DRAGONS    = ['\u{1F004}', '\u{1F005}', '\u{1F006}'];
-const FLOWERS: [string, string, string, string] =
-  ['\u{1F022}', '\u{1F023}', '\u{1F024}', '\u{1F025}'];
-const SEASONS: [string, string, string, string] =
-  ['\u{1F026}', '\u{1F027}', '\u{1F028}', '\u{1F029}'];
+const CHARACTERS = [
+  '\u{1F007}',
+  '\u{1F008}',
+  '\u{1F009}',
+  '\u{1F00A}',
+  '\u{1F00B}',
+  '\u{1F00C}',
+  '\u{1F00D}',
+  '\u{1F00E}',
+  '\u{1F00F}',
+];
+const BAMBOO = [
+  '\u{1F010}',
+  '\u{1F011}',
+  '\u{1F012}',
+  '\u{1F013}',
+  '\u{1F014}',
+  '\u{1F015}',
+  '\u{1F016}',
+  '\u{1F017}',
+  '\u{1F018}',
+];
+const DOTS = [
+  '\u{1F019}',
+  '\u{1F01A}',
+  '\u{1F01B}',
+  '\u{1F01C}',
+  '\u{1F01D}',
+  '\u{1F01E}',
+  '\u{1F01F}',
+  '\u{1F020}',
+  '\u{1F021}',
+];
+const WINDS = ['\u{1F000}', '\u{1F001}', '\u{1F002}', '\u{1F003}'];
+const DRAGONS = ['\u{1F004}', '\u{1F005}', '\u{1F006}'];
+const FLOWERS: [string, string, string, string] = [
+  '\u{1F022}',
+  '\u{1F023}',
+  '\u{1F024}',
+  '\u{1F025}',
+];
+const SEASONS: [string, string, string, string] = [
+  '\u{1F026}',
+  '\u{1F027}',
+  '\u{1F028}',
+  '\u{1F029}',
+];
 
 export const TILE_GROUPS: TileGroup[] = (() => {
   const groups: TileGroup[] = [];

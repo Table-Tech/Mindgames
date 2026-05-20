@@ -30,25 +30,20 @@ export function RootNavigator() {
     <NavigationContainer theme={navTheme}>
       <Stack.Navigator>
         <Stack.Screen name="Home" component={HomeScreen} options={{ headerShown: false }} />
-        <Stack.Screen
-          name="Sudoku"
-          options={{ title: 'Sudoku' }}
-        >
+        <Stack.Screen name="Sudoku" options={{ title: 'Sudoku' }}>
           {({ route }) => <SudokuScreen mode={route.params.mode} />}
         </Stack.Screen>
-        <Stack.Screen
-          name="Wordle"
-          options={{ title: 'Wordle' }}
-        >
+        <Stack.Screen name="Wordle" options={{ title: 'Wordle' }}>
           {({ route }) => <WordleScreen mode={route.params.mode} />}
         </Stack.Screen>
-        <Stack.Screen
-          name="Mahjong"
-          options={{ title: 'Mahjong' }}
-        >
+        <Stack.Screen name="Mahjong" options={{ title: 'Mahjong' }}>
           {({ route }) => <MahjongScreen mode={route.params.mode} />}
         </Stack.Screen>
-        <Stack.Screen name="Leaderboard" component={LeaderboardScreen} options={{ title: 'Leaderboard' }} />
+        <Stack.Screen
+          name="Leaderboard"
+          component={LeaderboardScreen}
+          options={{ title: 'Leaderboard' }}
+        />
         <Stack.Screen name="Stats" component={StatsScreen} options={{ title: 'Statistics' }} />
         <Stack.Screen name="Settings" component={SettingsScreen} options={{ title: 'Settings' }} />
       </Stack.Navigator>

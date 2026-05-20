@@ -45,7 +45,9 @@ export function NameInputModal({
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}
         style={styles.backdrop}
       >
-        <View style={[styles.card, { backgroundColor: colors.surface, borderColor: colors.border }]}>
+        <View
+          style={[styles.card, { backgroundColor: colors.surface, borderColor: colors.border }]}
+        >
           <Text style={[styles.title, { color: colors.text }]}>{title}</Text>
           {message && <Text style={[styles.message, { color: colors.textMuted }]}>{message}</Text>}
           <TextInput
@@ -55,7 +57,11 @@ export function NameInputModal({
             placeholderTextColor={colors.textMuted}
             style={[
               styles.input,
-              { color: colors.text, borderColor: colors.border, backgroundColor: colors.surfaceAlt },
+              {
+                color: colors.text,
+                borderColor: colors.border,
+                backgroundColor: colors.surfaceAlt,
+              },
             ]}
             maxLength={16}
             autoFocus

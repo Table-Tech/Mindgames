@@ -9,7 +9,10 @@ const REMINDER_ID = 'mindgames.daily.reminder';
 
 export async function ensurePermission(): Promise<boolean> {
   const settings = await Notifications.getPermissionsAsync();
-  if (settings.granted || settings.ios?.status === Notifications.IosAuthorizationStatus.PROVISIONAL) {
+  if (
+    settings.granted ||
+    settings.ios?.status === Notifications.IosAuthorizationStatus.PROVISIONAL
+  ) {
     return true;
   }
   const req = await Notifications.requestPermissionsAsync({
@@ -35,11 +38,11 @@ export async function scheduleDailyReminder(hour: number, minute: number): Promi
       sound: true,
     },
     trigger: {
+      type: Notifications.SchedulableTriggerInputTypes.DAILY,
       hour,
       minute,
-      repeats: true,
       channelId: 'daily',
-    } as Notifications.NotificationTriggerInput,
+    },
   });
 }
 

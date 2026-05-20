@@ -4,28 +4,30 @@ import type { Guess } from '../types';
 describe('Wordle evaluate', () => {
   it('marks all positions correct for the answer', () => {
     expect(evaluate('crane', 'crane')).toEqual([
-      'correct', 'correct', 'correct', 'correct', 'correct',
+      'correct',
+      'correct',
+      'correct',
+      'correct',
+      'correct',
     ]);
   });
 
   it('marks absent letters grey', () => {
-    expect(evaluate('zzzzz', 'crane')).toEqual([
-      'absent', 'absent', 'absent', 'absent', 'absent',
-    ]);
+    expect(evaluate('zzzzz', 'crane')).toEqual(['absent', 'absent', 'absent', 'absent', 'absent']);
   });
 
   it('handles duplicate letters correctly when only one exists in answer', () => {
     // Answer has one L. Guess has two Ls; only the first L should be yellow.
     const result = evaluate('llama', 'pilot');
-    expect(result[0]).toBe('present');  // first L matches the L in pilot
-    expect(result[1]).toBe('absent');   // second L has no remaining L
+    expect(result[0]).toBe('present'); // first L matches the L in pilot
+    expect(result[1]).toBe('absent'); // second L has no remaining L
   });
 
   it('prioritises correct (green) over present (yellow)', () => {
     // The second S in "sassy" is in the correct position for "essay";
     // the first S should NOT also be marked yellow.
     const result = evaluate('sassy', 'essay');
-    expect(result[1]).toBe('correct');  // s matches s in essay[1]? actually essay is e-s-s-a-y
+    expect(result[1]).toBe('correct'); // s matches s in essay[1]? actually essay is e-s-s-a-y
     // essay = e s s a y; sassy = s a s s y
     // pos 0: s vs e -> let's see if there is another s in essay -> yes -> present
     // pos 1: a vs s -> a not present yet, but check... actually a is at essay[3] -> present

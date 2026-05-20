@@ -29,7 +29,9 @@ export function LeaderboardScreen() {
           </Text>
         }
         renderItem={({ item, index }) => (
-          <View style={[styles.row, { backgroundColor: colors.surface, borderColor: colors.border }]}>
+          <View
+            style={[styles.row, { backgroundColor: colors.surface, borderColor: colors.border }]}
+          >
             <Text style={{ color: colors.textMuted, width: 28 }}>{index + 1}</Text>
             <Text style={{ color: colors.text, flex: 1 }}>{item.name}</Text>
             <Text style={{ color: colors.accent, fontVariant: ['tabular-nums'] }}>

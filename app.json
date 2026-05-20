@@ -10,16 +10,43 @@
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "com.mindgames.app",
+      "googleServicesFile": "./GoogleService-Info.plist",
       "infoPlist": {
         "NSUserNotificationsUsageDescription": "Mindgames sends an optional daily reminder when a new puzzle is available."
       }
     },
     "android": {
       "package": "com.mindgames.app",
-      "permissions": ["VIBRATE", "RECEIVE_BOOT_COMPLETED", "SCHEDULE_EXACT_ALARM"]
+      "googleServicesFile": "./google-services.json",
+      "permissions": [
+        "VIBRATE",
+        "RECEIVE_BOOT_COMPLETED",
+        "SCHEDULE_EXACT_ALARM",
+        "android.permission.RECORD_AUDIO",
+        "android.permission.MODIFY_AUDIO_SETTINGS"
+      ]
     },
     "plugins": [
-      "expo-notifications"
-    ]
+      "expo-notifications",
+      "expo-asset",
+      "expo-audio",
+      "expo-font",
+      "@react-native-firebase/app",
+      "@react-native-firebase/auth",
+      [
+        "expo-build-properties",
+        {
+          "ios": {
+            "useFrameworks": "static"
+          }
+        }
+      ]
+    ],
+    "extra": {
+      "eas": {
+        "projectId": "939e5339-fa6a-4a45-bbe7-d2f9b2331bce"
+      }
+    },
+    "owner": "tabletech"
   }
 }

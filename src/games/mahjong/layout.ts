@@ -10,15 +10,19 @@ import type { Position } from './types';
 // position at (x, y, z+1).
 
 interface Rect {
-  x0: number; y0: number; w: number; h: number; z: number;
+  x0: number;
+  y0: number;
+  w: number;
+  h: number;
+  z: number;
 }
 
 const LAYERS: Rect[] = [
   { z: 0, x0: 0, y0: 0, w: 10, h: 8 },
-  { z: 1, x0: 2, y0: 1, w: 6,  h: 6 },
-  { z: 2, x0: 3, y0: 2, w: 4,  h: 4 },
-  { z: 3, x0: 4, y0: 2, w: 2,  h: 4 },
-  { z: 4, x0: 4, y0: 3, w: 2,  h: 2 },
+  { z: 1, x0: 2, y0: 1, w: 6, h: 6 },
+  { z: 2, x0: 3, y0: 2, w: 4, h: 4 },
+  { z: 3, x0: 4, y0: 2, w: 2, h: 4 },
+  { z: 4, x0: 4, y0: 3, w: 2, h: 2 },
 ];
 
 export const POSITIONS: Position[] = (() => {
@@ -39,7 +43,7 @@ if (POSITIONS.length !== 144) {
 
 export const GRID_W = 10;
 export const GRID_H = 8;
-export const MAX_Z  = 4;
+export const MAX_Z = 4;
 
 export function posKey(p: Position): string {
   return `${p.x},${p.y},${p.z}`;

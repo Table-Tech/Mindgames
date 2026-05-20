@@ -1,24 +1,28 @@
-// Firebase integration scaffold.
+// Firebase integration for cloud leaderboards + anonymous auth + stats sync.
 //
-// The current implementation is a no-op so the UI can be built end-to-end.
-// To wire real Firebase for cloud leaderboards + anonymous auth + stats
-// sync, follow the TODOs below.
+// Uses the @react-native-firebase modular API (v22+). The native side picks
+// up GoogleService-Info.plist / google-services.json automatically through
+// the config plugin in app.json, so no explicit initializeApp() is needed.
 //
-// Setup (the user does this in their own Firebase project):
-//   1. yarn add @react-native-firebase/app @react-native-firebase/auth \
-//                  @react-native-firebase/firestore
-//   2. expo prebuild   (firebase requires the bare workflow or dev client)
-//   3. Add GoogleService-Info.plist (iOS) and google-services.json (Android)
-//      to the project root and reference them from app.json's
-//      ios.googleServicesFile and android.googleServicesFile.
-//   4. Anonymous auth must be enabled in the Firebase console.
-//   5. Replace the stub bodies in this file with real SDK calls.
-//
-// Firestore layout (suggested):
+// Firestore layout:
 //   /leaderboards/{game}/days/{yyyy-mm-dd}/scores/{uid}
 //       { name, timeMs, guesses?, score?, createdAt: serverTimestamp() }
 //   /users/{uid}
-//       { name, totals: { sudoku: {...}, wordle: {...}, mahjong: {...} } }
+//       { totals: { sudoku: {...}, wordle: {...}, mahjong: {...} } }
+
+import { getApp } from '@react-native-firebase/app';
+import { getAuth, signInAnonymously, onAuthStateChanged } from '@react-native-firebase/auth';
+import {
+  getFirestore,
+  collection,
+  doc,
+  setDoc,
+  getDocs,
+  query,
+  orderBy,
+  limit as fsLimit,
+  serverTimestamp,
+} from '@react-native-firebase/firestore';
 
 import type { GameId } from '@/stats/stats';
 
@@ -27,33 +31,49 @@ export interface LeaderboardEntry {
   timeMs: number;
   guesses?: number;
   score?: number;
-  // Set by the server in real Firestore — keep client-side null for now.
   createdAt?: number | null;
 }
 
-let configured = false;
+let signInPromise: Promise<string> | null = null;
 let cachedUid: string | null = null;
 
 export async function initFirebase(): Promise<void> {
-  if (configured) return;
-  configured = true;
-  // TODO(firebase): no explicit init needed for the modular SDK with
-  // GoogleService files in place. If you use the JS SDK instead, do:
-  //   import { initializeApp } from 'firebase/app';
-  //   initializeApp(config);
+  // Forces native init by touching the default app. Throws clearly if the
+  // google-services files are missing instead of failing later inside a write.
+  getApp();
 }
 
-// Returns a stable per-device id. With real Firebase auth this is the
-// anonymous-user uid; the stub just returns a UUID once and caches it.
+// Returns the anonymous-auth uid, signing in lazily on first call. Concurrent
+// callers share a single in-flight sign-in.
 export async function getOrCreateUser(): Promise<string> {
   if (cachedUid) return cachedUid;
-  // TODO(firebase):
-  //   import auth from '@react-native-firebase/auth';
-  //   const cred = auth().currentUser ?? (await auth().signInAnonymously()).user;
-  //   cachedUid = cred.uid;
-  //   return cachedUid;
-  cachedUid = 'local-' + Math.random().toString(36).slice(2, 10);
-  return cachedUid;
+  if (signInPromise) return signInPromise;
+
+  signInPromise = (async () => {
+    const auth = getAuth();
+    const current = auth.currentUser;
+    if (current) {
+      cachedUid = current.uid;
+      return current.uid;
+    }
+    const cred = await signInAnonymously(auth);
+    cachedUid = cred.user.uid;
+    return cachedUid;
+  })();
+
+  try {
+    return await signInPromise;
+  } finally {
+    signInPromise = null;
+  }
+}
+
+// Subscribe to auth state changes so a sign-out (eg. after token revocation)
+// invalidates our cache. Returns the unsubscribe function.
+export function watchAuthState(): () => void {
+  return onAuthStateChanged(getAuth(), user => {
+    cachedUid = user?.uid ?? null;
+  });
 }
 
 export async function submitLeaderboardScore(
@@ -61,16 +81,20 @@ export async function submitLeaderboardScore(
   date: string,
   entry: LeaderboardEntry,
 ): Promise<void> {
-  await initFirebase();
   const uid = await getOrCreateUser();
-  void uid; void game; void date; void entry;
-  // TODO(firebase):
-  //   import firestore from '@react-native-firebase/firestore';
-  //   await firestore()
-  //     .collection('leaderboards').doc(game)
-  //     .collection('days').doc(date)
-  //     .collection('scores').doc(uid)
-  //     .set({ ...entry, createdAt: firestore.FieldValue.serverTimestamp() });
+  const db = getFirestore();
+  const scoreDoc = doc(collection(doc(collection(db, 'leaderboards'), game), 'days'), date);
+  await setDoc(
+    doc(collection(scoreDoc, 'scores'), uid),
+    {
+      name: entry.name,
+      timeMs: entry.timeMs,
+      ...(entry.guesses !== undefined && { guesses: entry.guesses }),
+      ...(entry.score !== undefined && { score: entry.score }),
+      createdAt: serverTimestamp(),
+    },
+    { merge: true },
+  );
 }
 
 export async function fetchDailyLeaderboard(
@@ -78,26 +102,29 @@ export async function fetchDailyLeaderboard(
   date: string,
   limit = 50,
 ): Promise<LeaderboardEntry[]> {
-  await initFirebase();
-  void game; void date; void limit;
-  // TODO(firebase):
-  //   const snap = await firestore()
-  //     .collection('leaderboards').doc(game)
-  //     .collection('days').doc(date)
-  //     .collection('scores')
-  //     .orderBy('timeMs', 'asc')
-  //     .limit(limit)
-  //     .get();
-  //   return snap.docs.map(d => d.data() as LeaderboardEntry);
-  return [];
+  const db = getFirestore();
+  const scoresCol = collection(
+    doc(collection(doc(collection(db, 'leaderboards'), game), 'days'), date),
+    'scores',
+  );
+  const snap = await getDocs(query(scoresCol, orderBy('timeMs', 'asc'), fsLimit(limit)));
+  return snap.docs.map(d => {
+    const data = d.data();
+    return {
+      name: data.name,
+      timeMs: data.timeMs,
+      guesses: data.guesses,
+      score: data.score,
+      // Firestore Timestamp → millis epoch (null while pending serverTimestamp resolution).
+      createdAt: data.createdAt?.toMillis?.() ?? null,
+    };
+  });
 }
 
 export async function syncStatsTotals(
   totals: Record<GameId, { played: number; won: number }>,
 ): Promise<void> {
-  await initFirebase();
   const uid = await getOrCreateUser();
-  void uid; void totals;
-  // TODO(firebase):
-  //   await firestore().collection('users').doc(uid).set({ totals }, { merge: true });
+  const db = getFirestore();
+  await setDoc(doc(collection(db, 'users'), uid), { totals }, { merge: true });
 }

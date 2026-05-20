@@ -3,9 +3,7 @@ import type { WordleMode, WordleState } from './types';
 import { todayISO } from '@/leaderboard/leaderboard';
 
 function key(mode: WordleMode): string {
-  return mode.kind === 'daily'
-    ? `wordle.state.daily.${todayISO()}`
-    : 'wordle.state.random';
+  return mode.kind === 'daily' ? `wordle.state.daily.${todayISO()}` : 'wordle.state.random';
 }
 
 // Serialization: WordleState is JSON-safe already (no Sets, no Dates).

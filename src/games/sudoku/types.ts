@@ -3,9 +3,7 @@ export type Board = Cell[]; // length 81, row-major
 
 export type Difficulty = 'easy' | 'medium' | 'hard' | 'expert' | 'master' | 'extreme';
 
-export const DIFFICULTIES: Difficulty[] = [
-  'easy', 'medium', 'hard', 'expert', 'master', 'extreme',
-];
+export const DIFFICULTIES: Difficulty[] = ['easy', 'medium', 'hard', 'expert', 'master', 'extreme'];
 
 // Points per correctly placed cell (used by the live score).
 export const DIFFICULTY_POINTS: Record<Difficulty, number> = {
@@ -18,8 +16,8 @@ export const DIFFICULTY_POINTS: Record<Difficulty, number> = {
 };
 
 export interface Puzzle {
-  given: Board;     // initial clues (immutable cells are non-zero)
-  solution: Board;  // the unique solution
+  given: Board; // initial clues (immutable cells are non-zero)
+  solution: Board; // the unique solution
   difficulty: Difficulty;
-  seed: number;     // PRNG seed used
+  seed: number; // PRNG seed used
 }
