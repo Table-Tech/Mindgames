@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import {
   Alert,
   Pressable,
@@ -20,12 +20,42 @@ import {
   ensurePermission,
   scheduleDailyReminder,
 } from '@/notifications/dailyReminder';
+import { flushPush, fullSync, getLastSyncedAt, schedulePush } from '@/cloud/cloudSave';
+import { ActivityIndicator } from 'react-native';
 
 export function SettingsScreen() {
   const { colors } = useTheme();
   const { adsRemoved, purchaseRemoveAds, restorePurchases } = useEntitlements();
   const { prefs, setPref, resetPrefs } = usePreferences();
   const [nameDraft, setNameDraft] = useState(prefs.playerName);
+  const [syncBusy, setSyncBusy] = useState(false);
+  const [lastSyncedAt, setLastSyncedAt] = useState<number | null>(null);
+
+  useEffect(() => {
+    getLastSyncedAt().then(setLastSyncedAt);
+  }, []);
+
+  // Refresh the playerName draft when the cloud sync writes a new value
+  // back to local prefs.
+  useEffect(() => {
+    setNameDraft(prefs.playerName);
+  }, [prefs.playerName]);
+
+  const onSyncNow = useCallback(async () => {
+    setSyncBusy(true);
+    try {
+      const res = await fullSync();
+      if (!res.ok) {
+        Alert.alert(
+          'Sync failed',
+          res.error ?? 'Could not reach the cloud. Check your connection and try again.',
+        );
+      }
+      setLastSyncedAt(await getLastSyncedAt());
+    } finally {
+      setSyncBusy(false);
+    }
+  }, []);
 
   const themeOptions: { value: ThemeMode; label: string }[] = [
     { value: 'system', label: 'Auto' },
@@ -45,6 +75,8 @@ export function SettingsScreen() {
           onPress: async () => {
             await AsyncStorage.clear();
             resetPrefs();
+            // Tell the cloud the user's snapshot is now empty.
+            schedulePush(0);
             Alert.alert('Cleared', 'All local data has been removed.');
           },
         },
@@ -53,17 +85,24 @@ export function SettingsScreen() {
   };
 
   const clearStats = async () => {
-    Alert.alert('Clear statistics', 'Reset all play stats and streaks?', [
-      { text: 'Cancel', style: 'cancel' },
-      {
-        text: 'Clear',
-        style: 'destructive',
-        onPress: async () => {
-          await AsyncStorage.multiRemove(['stats.records.v1', 'sudoku.daily.leaderboard.v1']);
-          Alert.alert('Done', 'Statistics cleared.');
+    Alert.alert(
+      'Clear statistics',
+      'Reset all play stats and streaks on this device? Cloud-synced stats will repopulate on next sign-in unless you also clear the cloud copy.',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Clear',
+          style: 'destructive',
+          onPress: async () => {
+            await AsyncStorage.multiRemove(['stats.records.v1', 'sudoku.daily.leaderboard.v1']);
+            // Push the empty record set so cloud reflects the wipe too.
+            await flushPush().catch(() => {});
+            setLastSyncedAt(await getLastSyncedAt());
+            Alert.alert('Done', 'Statistics cleared.');
+          },
         },
-      },
-    ]);
+      ],
+    );
   };
 
   return (
@@ -187,6 +226,49 @@ export function SettingsScreen() {
           </Row>
         </Section>
 
+        <Section title="Cloud sync">
+          <Row label="Last synced">
+            <Text style={{ color: colors.textMuted, fontSize: 13 }}>
+              {formatLastSynced(lastSyncedAt)}
+            </Text>
+          </Row>
+          <Pressable
+            onPress={onSyncNow}
+            disabled={syncBusy}
+            style={[
+              styles.bigBtn,
+              {
+                backgroundColor: 'transparent',
+                borderColor: colors.border,
+                borderWidth: StyleSheet.hairlineWidth,
+                flexDirection: 'row',
+                gap: 8,
+                opacity: syncBusy ? 0.6 : 1,
+              },
+            ]}
+          >
+            {syncBusy ? (
+              <ActivityIndicator size="small" color={colors.text} />
+            ) : (
+              <Ionicons name="cloud-upload-outline" size={18} color={colors.text} />
+            )}
+            <Text style={{ color: colors.text }}>{syncBusy ? 'Syncing…' : 'Sync now'}</Text>
+          </Pressable>
+          <Text
+            style={{
+              color: colors.textMuted,
+              fontSize: 11,
+              paddingHorizontal: 14,
+              paddingBottom: 12,
+              lineHeight: 16,
+            }}
+          >
+            Stats records and your leaderboard name sync across devices via Firebase. Daily
+            scores submit automatically when you finish. Device-only settings (theme, sound,
+            haptics, hard mode) stay on this device.
+          </Text>
+        </Section>
+
         <Section title="Purchases">
           {adsRemoved ? (
             <Text style={{ color: colors.accent, paddingVertical: 8 }}>
@@ -241,6 +323,19 @@ export function SettingsScreen() {
       </ScrollView>
     </SafeAreaView>
   );
+}
+
+function formatLastSynced(ms: number | null): string {
+  if (!ms) return 'Never';
+  const delta = Date.now() - ms;
+  const sec = Math.floor(delta / 1000);
+  if (sec < 60) return 'Just now';
+  const min = Math.floor(sec / 60);
+  if (min < 60) return `${min}m ago`;
+  const hr = Math.floor(min / 60);
+  if (hr < 24) return `${hr}h ago`;
+  const days = Math.floor(hr / 24);
+  return `${days}d ago`;
 }
 
 function Section({

@@ -1,5 +1,6 @@
 import { getJSON, setJSON } from '@/storage/storage';
 import { todayISO } from '@/leaderboard/leaderboard';
+import { schedulePush } from '@/cloud/cloudSave';
 
 export type GameId = 'sudoku' | 'wordle' | 'mahjong';
 export type GameOutcome = 'won' | 'lost';
@@ -26,6 +27,8 @@ export async function recordFinish(r: FinishRecord): Promise<void> {
   const list = await getRecords();
   list.push(r);
   await setJSON(KEY, list);
+  // Mirror to cloud; debounced so back-to-back finishes coalesce.
+  schedulePush();
 }
 
 export interface GameStats {

@@ -1,6 +1,7 @@
-import React, { useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import { ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { useFocusEffect } from '@react-navigation/native';
 import { useTheme } from '@/theme/ThemeProvider';
 import {
   computeStats,
@@ -24,9 +25,22 @@ export function StatsScreen() {
   const { colors } = useTheme();
   const [records, setRecords] = useState<FinishRecord[] | null>(null);
 
-  useEffect(() => {
+  const refresh = useCallback(() => {
     getRecords().then(setRecords);
   }, []);
+
+  useEffect(() => {
+    refresh();
+  }, [refresh]);
+
+  // Cloud sync writes merged records back to local storage asynchronously
+  // after the screen mounts; refetch when this screen regains focus so the
+  // numbers stay up to date.
+  useFocusEffect(
+    useCallback(() => {
+      refresh();
+    }, [refresh]),
+  );
 
   if (records === null) {
     return <SafeAreaView style={{ flex: 1, backgroundColor: colors.background }} />;

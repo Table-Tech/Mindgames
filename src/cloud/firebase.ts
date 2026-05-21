@@ -17,6 +17,7 @@ import {
   collection,
   doc,
   setDoc,
+  getDoc,
   getDocs,
   query,
   orderBy,
@@ -25,6 +26,15 @@ import {
 } from '@react-native-firebase/firestore';
 
 import type { GameId } from '@/stats/stats';
+import type { FinishRecord } from '@/stats/stats';
+
+export interface CloudSavePayload {
+  statsRecords?: FinishRecord[];
+  playerName?: string;
+  onboardingSeen?: Record<string, boolean>;
+  totals?: Record<GameId, { played: number; won: number }>;
+  updatedAt?: number | null;
+}
 
 export interface LeaderboardEntry {
   name: string;
@@ -127,4 +137,40 @@ export async function syncStatsTotals(
   const uid = await getOrCreateUser();
   const db = getFirestore();
   await setDoc(doc(collection(db, 'users'), uid), { totals }, { merge: true });
+}
+
+// Whole-document cloud save / load on /users/{uid}. Uses merge:true so each
+// field can be written independently without clobbering siblings.
+export async function pushCloudSave(payload: CloudSavePayload): Promise<void> {
+  const uid = await getOrCreateUser();
+  const db = getFirestore();
+  await setDoc(
+    doc(collection(db, 'users'), uid),
+    {
+      ...(payload.statsRecords !== undefined && { statsRecords: payload.statsRecords }),
+      ...(payload.playerName !== undefined && { playerName: payload.playerName }),
+      ...(payload.onboardingSeen !== undefined && { onboardingSeen: payload.onboardingSeen }),
+      ...(payload.totals !== undefined && { totals: payload.totals }),
+      updatedAt: serverTimestamp(),
+    },
+    { merge: true },
+  );
+}
+
+export async function pullCloudSave(): Promise<CloudSavePayload | null> {
+  const uid = await getOrCreateUser();
+  const db = getFirestore();
+  const snap = await getDoc(doc(collection(db, 'users'), uid));
+  if (!snap.exists) return null;
+  const data = snap.data() ?? {};
+  return {
+    statsRecords: Array.isArray(data.statsRecords) ? (data.statsRecords as FinishRecord[]) : undefined,
+    playerName: typeof data.playerName === 'string' ? data.playerName : undefined,
+    onboardingSeen:
+      data.onboardingSeen && typeof data.onboardingSeen === 'object'
+        ? (data.onboardingSeen as Record<string, boolean>)
+        : undefined,
+    totals: data.totals as CloudSavePayload['totals'],
+    updatedAt: data.updatedAt?.toMillis?.() ?? null,
+  };
 }
