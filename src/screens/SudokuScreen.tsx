@@ -543,7 +543,7 @@ export function SudokuScreen({ mode: navMode }: Props) {
       <NameInputModal
         visible={nameModalVisible}
         title="Save your daily score"
-        message="Your name will appear on the daily leaderboard."
+        message="We'll remember your name for future daily scores. You can change it later in Settings."
         placeholder="Your name"
         defaultValue={prefs.playerName}
         onSubmit={async name => {
