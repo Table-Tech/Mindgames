@@ -10,7 +10,7 @@ const SQUARES: Record<string, string> = {
 export function wordleShareText(guesses: Guess[], maxGuesses: number, dayLabel: string): string {
   const tries = guesses.length;
   const solved = guesses[guesses.length - 1]?.states.every(s => s === 'correct') ?? false;
-  const head = `Mindgames Wordle ${dayLabel} ${solved ? tries : 'X'}/${maxGuesses}`;
+  const head = `Puzzaro Wordle ${dayLabel} ${solved ? tries : 'X'}/${maxGuesses}`;
   const grid = guesses.map(g => g.states.map(s => SQUARES[s] ?? '⬛').join('')).join('\n');
   return `${head}\n\n${grid}`;
 }
@@ -40,7 +40,7 @@ export function buildShareText(r: ResultShare): string {
   const parts: string[] = [];
   const gameLabel = r.game[0].toUpperCase() + r.game.slice(1);
   const tag = r.dayLabel ? `${gameLabel} ${r.dayLabel}` : gameLabel;
-  parts.push(`Mindgames ${tag}`);
+  parts.push(`Puzzaro ${tag}`);
   if (r.difficulty) parts.push(`Difficulty: ${r.difficulty}`);
   parts.push(r.won ? `Solved in ${fmtTime(r.timeMs)}` : 'Did not solve');
   if (typeof r.score === 'number') parts.push(`Score: ${r.score}`);

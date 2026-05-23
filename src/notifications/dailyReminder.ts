@@ -5,7 +5,7 @@ import { Platform } from 'react-native';
 // user's chosen time as a "new daily challenge is available" nudge. No remote
 // push service needed; expo-notifications handles permission + scheduling.
 
-const REMINDER_ID = 'mindgames.daily.reminder';
+const REMINDER_ID = 'puzzaro.daily.reminder';
 
 export async function ensurePermission(): Promise<boolean> {
   const settings = await Notifications.getPermissionsAsync();

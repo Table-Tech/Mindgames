@@ -1,22 +1,22 @@
 {
   "expo": {
-    "name": "Mindgames",
-    "slug": "mindgames",
+    "name": "Puzzaro",
+    "slug": "puzzaro",
     "version": "0.1.0",
     "orientation": "portrait",
     "userInterfaceStyle": "automatic",
-    "scheme": "mindgames",
+    "scheme": "puzzaro",
     "assetBundlePatterns": ["**/*"],
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.mindgames.app",
+      "bundleIdentifier": "com.puzzaro.app",
       "googleServicesFile": "./GoogleService-Info.plist",
       "infoPlist": {
-        "NSUserNotificationsUsageDescription": "Mindgames sends an optional daily reminder when a new puzzle is available."
+        "NSUserNotificationsUsageDescription": "Puzzaro sends an optional daily reminder when a new puzzle is available."
       }
     },
     "android": {
-      "package": "com.mindgames.app",
+      "package": "com.puzzaro.app",
       "googleServicesFile": "./google-services.json",
       "permissions": [
         "VIBRATE",

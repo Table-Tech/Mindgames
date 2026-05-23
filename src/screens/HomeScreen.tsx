@@ -32,7 +32,7 @@ export function HomeScreen({ navigation }: Props) {
     <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
       <ScrollView contentContainerStyle={styles.body}>
         <View style={styles.headerRow}>
-          <Text style={[styles.title, { color: colors.text }]}>Mindgames</Text>
+          <Text style={[styles.title, { color: colors.text }]}>Puzzaro</Text>
           {status && totalStreak(status) > 0 && (
             <View style={[styles.streakChip, { backgroundColor: colors.accent }]}>
               <Ionicons name="flame" size={14} color="#fff" />

@@ -180,7 +180,7 @@ export function SettingsScreen() {
                 if (!granted) {
                   Alert.alert(
                     'Permission denied',
-                    'Enable notifications for Mindgames in system settings to use reminders.',
+                    'Enable notifications for Puzzaro in system settings to use reminders.',
                   );
                   return;
                 }
@@ -345,7 +345,7 @@ export function SettingsScreen() {
           </Pressable>
         </Section>
 
-        <Text style={[styles.version, { color: colors.textMuted }]}>Mindgames · v0.1.0</Text>
+        <Text style={[styles.version, { color: colors.textMuted }]}>Puzzaro · v0.1.0</Text>
       </ScrollView>
     </SafeAreaView>
   );

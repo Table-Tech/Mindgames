@@ -1,4 +1,4 @@
-# Mindgames
+# Puzzaro
 
 Cross-platform mobile puzzle app (iOS + Android) built with Expo + React Native + TypeScript.
 Three games — **Sudoku**, **Wordle**, **Mahjong Solitaire** — each with daily challenges, local
@@ -12,7 +12,7 @@ The app uses native modules (`@react-native-firebase/*`, RevenueCat, static iOS 
 
 ```bash
 npm install
-npx expo start --dev-client    # scan the QR with the Mindgames dev client app
+npx expo start --dev-client    # scan the QR with the Puzzaro dev client app
 ```
 
 For the first install on each platform, see the platform sections below.
@@ -52,7 +52,7 @@ Then on the Mac:
 
 ```bash
 git clone <repo>
-cd Mindgames
+cd puzzaro
 npm install
 # Drop GoogleService-Info.plist in project root here
 npx expo prebuild --platform ios --clean    # generates ios/ folder
@@ -63,8 +63,8 @@ For a real iPhone with a **free Apple ID** (7-day app expiry, no push/IAP):
 
 ```bash
 npx expo prebuild --platform ios --clean
-open ios/Mindgames.xcworkspace
-# In Xcode: select the Mindgames target → Signing & Capabilities
+open ios/Puzzaro.xcworkspace
+# In Xcode: select the Puzzaro target → Signing & Capabilities
 # → set Team to your personal Apple ID → plug in iPhone over USB → press ▶
 ```
 
@@ -150,8 +150,8 @@ To set up a Firebase project from scratch:
 1. Create project at https://console.firebase.google.com.
 2. Authentication → Sign-in method → enable **Anonymous**.
 3. Firestore Database → create in `eur3 (europe-west)` production mode → paste `firestore.rules`.
-4. Add Android app with package `com.mindgames.app` → download `google-services.json` to project root.
-5. Add iOS app with bundle id `com.mindgames.app` → download `GoogleService-Info.plist` to project root.
+4. Add Android app with package `com.puzzaro.app` → download `google-services.json` to project root.
+5. Add iOS app with bundle id `com.puzzaro.app` → download `GoogleService-Info.plist` to project root.
 6. Rebuild the dev client (`npx expo prebuild --clean && expo run:android` / `expo run:ios`).
 
 ### 4. Icons + splash + sound assets
