@@ -25,7 +25,8 @@ import { ActivityIndicator } from 'react-native';
 
 export function SettingsScreen() {
   const { colors } = useTheme();
-  const { adsRemoved, purchaseRemoveAds, restorePurchases } = useEntitlements();
+  const { adsRemoved, purchasing, restoring, purchaseRemoveAds, restorePurchases } =
+    useEntitlements();
   const { prefs, setPref, resetPrefs } = usePreferences();
   const [nameDraft, setNameDraft] = useState(prefs.playerName);
   const [syncBusy, setSyncBusy] = useState(false);
@@ -276,17 +277,42 @@ export function SettingsScreen() {
             </Text>
           ) : (
             <Pressable
+              disabled={purchasing}
               onPress={async () => {
-                await purchaseRemoveAds();
-                Alert.alert('Thank you!', 'Ads have been removed.');
+                const r = await purchaseRemoveAds();
+                if (r.ok) {
+                  Alert.alert('Thank you!', 'Ads have been removed.');
+                } else if (!r.cancelled) {
+                  Alert.alert('Purchase failed', r.error ?? 'Please try again.');
+                }
               }}
-              style={[styles.bigBtn, { backgroundColor: colors.accent }]}
+              style={[
+                styles.bigBtn,
+                { backgroundColor: colors.accent, opacity: purchasing ? 0.6 : 1 },
+              ]}
             >
-              <Text style={{ color: '#fff', fontWeight: '700' }}>Remove ads · €2.99</Text>
+              {purchasing ? (
+                <ActivityIndicator color="#fff" />
+              ) : (
+                <Text style={{ color: '#fff', fontWeight: '700' }}>Remove ads · €2.99</Text>
+              )}
             </Pressable>
           )}
-          <Pressable onPress={restorePurchases} style={styles.linkRow}>
-            <Text style={{ color: colors.textMuted }}>Restore purchases</Text>
+          <Pressable
+            disabled={restoring}
+            onPress={async () => {
+              const r = await restorePurchases();
+              if (!r.ok) {
+                Alert.alert('Restore failed', r.error ?? 'Please try again.');
+              } else if (!adsRemoved) {
+                Alert.alert('Nothing to restore', 'No previous purchases were found.');
+              }
+            }}
+            style={[styles.linkRow, { opacity: restoring ? 0.5 : 1 }]}
+          >
+            <Text style={{ color: colors.textMuted }}>
+              {restoring ? 'Restoring…' : 'Restore purchases'}
+            </Text>
           </Pressable>
         </Section>
 
