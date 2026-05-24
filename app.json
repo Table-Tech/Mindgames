@@ -6,7 +6,9 @@
     "orientation": "portrait",
     "userInterfaceStyle": "automatic",
     "scheme": "puzzaro",
-    "assetBundlePatterns": ["**/*"],
+    "assetBundlePatterns": [
+      "**/*"
+    ],
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "com.puzzaro.tabletech",
@@ -42,11 +44,11 @@
         }
       ]
     ],
+    "owner": "tabletech",
     "extra": {
       "eas": {
-        "projectId": "939e5339-fa6a-4a45-bbe7-d2f9b2331bce"
+        "projectId": "fea18b4b-c7b0-4dcf-8af0-3fdb962a3637"
       }
-    },
-    "owner": "tabletech"
+    }
   }
 }
