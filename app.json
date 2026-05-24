@@ -9,14 +9,14 @@
     "assetBundlePatterns": ["**/*"],
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.puzzaro.app",
+      "bundleIdentifier": "com.puzzaro.tabletech",
       "googleServicesFile": "./GoogleService-Info.plist",
       "infoPlist": {
         "NSUserNotificationsUsageDescription": "Puzzaro sends an optional daily reminder when a new puzzle is available."
       }
     },
     "android": {
-      "package": "com.puzzaro.app",
+      "package": "com.puzzaro.tabletech",
       "googleServicesFile": "./google-services.json",
       "permissions": [
         "VIBRATE",
