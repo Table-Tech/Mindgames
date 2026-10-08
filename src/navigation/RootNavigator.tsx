@@ -28,24 +28,22 @@ export function RootNavigator() {
   };
   return (
     <NavigationContainer theme={navTheme}>
-      <Stack.Navigator>
-        <Stack.Screen name="Home" component={HomeScreen} options={{ headerShown: false }} />
-        <Stack.Screen name="Sudoku" options={{ title: 'Sudoku' }}>
+      {/* Every screen draws its own chunky header, so the native one is hidden. */}
+      <Stack.Navigator screenOptions={{ headerShown: false }}>
+        <Stack.Screen name="Home" component={HomeScreen} />
+        <Stack.Screen name="Sudoku">
           {({ route }) => <SudokuScreen mode={route.params.mode} />}
         </Stack.Screen>
-        <Stack.Screen name="Wordle" options={{ title: 'Wordle' }}>
+        <Stack.Screen name="Wordle">
           {({ route }) => <WordleScreen mode={route.params.mode} />}
         </Stack.Screen>
-        <Stack.Screen name="Mahjong" options={{ title: 'Mahjong' }}>
+        <Stack.Screen name="Mahjong">
           {({ route }) => <MahjongScreen mode={route.params.mode} />}
         </Stack.Screen>
-        <Stack.Screen
-          name="Leaderboard"
-          component={LeaderboardScreen}
-          options={{ title: 'Leaderboard' }}
-        />
-        <Stack.Screen name="Stats" component={StatsScreen} options={{ title: 'Statistics' }} />
-        <Stack.Screen name="Settings" component={SettingsScreen} options={{ title: 'Settings' }} />
+        <Stack.Screen name="Leaderboard" component={LeaderboardScreen} />
+        {/* Tab-bar destinations swap in place instead of sliding. */}
+        <Stack.Screen name="Stats" component={StatsScreen} options={{ animation: 'fade' }} />
+        <Stack.Screen name="Settings" component={SettingsScreen} options={{ animation: 'fade' }} />
       </Stack.Navigator>
     </NavigationContainer>
   );

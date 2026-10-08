@@ -2,6 +2,10 @@ import React from 'react';
 import { Modal, Pressable, StyleSheet, Text, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '@/theme/ThemeProvider';
+import { fonts } from '@/theme/fonts';
+import { Body, Card, Chunky, Display, Eyebrow, OUTLINE } from '@/ui/kit';
+import { letterColors } from '@/games/wordle/WordleGrid';
+import type { Guess } from '@/games/wordle/types';
 import { Confetti } from './Confetti';
 import { shareResult, type ResultShare } from '@/share/share';
 
@@ -17,12 +21,18 @@ interface Props {
   subtitle?: string;
   stats?: Stat[];
   share?: ResultShare;
+  /** The game's signature color; used for the win card. */
+  accent?: string;
+  /** When set, shows the colored guess grid (Wordle). */
+  wordleGuesses?: Guess[];
   primaryLabel: string;
   onPrimary: () => void;
   secondaryLabel?: string;
   onSecondary?: () => void;
   onDismiss?: () => void;
 }
+
+const INK = '#1D1A33';
 
 export function ResultModal({
   visible,
@@ -31,6 +41,8 @@ export function ResultModal({
   subtitle,
   stats,
   share,
+  accent,
+  wordleGuesses,
   primaryLabel,
   onPrimary,
   secondaryLabel,
@@ -38,66 +50,104 @@ export function ResultModal({
   onDismiss,
 }: Props) {
   const { colors } = useTheme();
+  const cardColor = won ? (accent ?? colors.sudoku) : colors.surface;
+  // Blue is the only signature color dark enough for white text.
+  const onCard = won && cardColor === colors.sudoku ? '#FFFFFF' : won ? INK : colors.text;
 
   return (
     <Modal transparent visible={visible} animationType="fade" onRequestClose={onDismiss}>
       <View style={styles.backdrop}>
-        {won && <Confetti />}
-        <View
-          style={[styles.card, { backgroundColor: colors.surface, borderColor: colors.border }]}
-        >
-          <View style={[styles.iconWrap, { backgroundColor: won ? '#4caf6f' : colors.surfaceAlt }]}>
+        {won && (
+          <Confetti
+            colors={[colors.sudoku, colors.wordle, colors.mahjong, colors.pink, '#FFFFFF']}
+          />
+        )}
+        <Card color={cardColor} radius={26} depth={6} style={styles.card}>
+          <View
+            style={[
+              styles.iconWrap,
+              {
+                backgroundColor: won ? colors.sunflower : colors.surfaceAlt,
+                borderColor: colors.ink,
+              },
+            ]}
+          >
             <Ionicons
-              name={won ? 'trophy' : 'sad-outline'}
-              size={32}
-              color={won ? '#fff' : colors.textMuted}
+              name={won ? 'trophy' : 'heart-dislike-outline'}
+              size={34}
+              color={won ? INK : colors.text}
             />
           </View>
-          <Text style={[styles.title, { color: colors.text }]}>{title}</Text>
+          <Display style={[styles.title, { color: onCard }]}>{title}</Display>
           {subtitle && (
-            <Text style={[styles.subtitle, { color: colors.textMuted }]}>{subtitle}</Text>
+            <Body style={[styles.subtitle, { color: onCard, opacity: won ? 0.9 : 1 }]}>
+              {subtitle}
+            </Body>
+          )}
+
+          {wordleGuesses && wordleGuesses.length > 0 && (
+            <View style={styles.guessGrid}>
+              {wordleGuesses.map((g, gi) => (
+                <View key={gi} style={{ flexDirection: 'row', gap: 4 }}>
+                  {g.states.map((s, si) => (
+                    <View
+                      key={si}
+                      style={[
+                        styles.guessSq,
+                        {
+                          borderColor: colors.ink,
+                          backgroundColor: letterColors(s, colors)?.bg ?? colors.surface,
+                        },
+                      ]}
+                    />
+                  ))}
+                </View>
+              ))}
+            </View>
           )}
 
           {stats && stats.length > 0 && (
             <View style={styles.statsRow}>
               {stats.map(s => (
-                <View key={s.label} style={styles.stat}>
-                  <Text style={[styles.statValue, { color: colors.text }]}>{s.value}</Text>
-                  <Text style={[styles.statLabel, { color: colors.textMuted }]}>{s.label}</Text>
+                <View
+                  key={s.label}
+                  style={[
+                    styles.stat,
+                    { backgroundColor: colors.surface, borderColor: colors.ink },
+                  ]}
+                >
+                  <Eyebrow style={{ fontSize: 10, color: colors.textMuted }}>{s.label}</Eyebrow>
+                  <Display style={{ fontSize: 22, fontVariant: ['tabular-nums'] }}>
+                    {s.value}
+                  </Display>
                 </View>
               ))}
             </View>
           )}
 
           <View style={styles.actions}>
-            <Pressable
+            <Chunky
               onPress={onPrimary}
-              style={[styles.primaryBtn, { backgroundColor: colors.accent }]}
+              color={won ? colors.sunflower : colors.pink}
+              contentStyle={styles.bigBtn}
             >
-              <Text style={{ color: '#fff', fontWeight: '700' }}>{primaryLabel}</Text>
-            </Pressable>
-            {secondaryLabel && onSecondary && (
-              <Pressable
-                onPress={onSecondary}
-                style={[styles.secondaryBtn, { borderColor: colors.border }]}
-              >
-                <Text style={{ color: colors.text }}>{secondaryLabel}</Text>
-              </Pressable>
-            )}
+              <Text style={styles.bigBtnText}>{primaryLabel}</Text>
+            </Chunky>
             {share && (
-              <Pressable
-                onPress={() => shareResult(share)}
-                style={[
-                  styles.secondaryBtn,
-                  { borderColor: colors.border, flexDirection: 'row', gap: 6 },
-                ]}
-              >
-                <Ionicons name="share-outline" size={16} color={colors.text} />
-                <Text style={{ color: colors.text }}>Share</Text>
+              <Chunky onPress={() => shareResult(share)} contentStyle={[styles.bigBtn, styles.row]}>
+                <Ionicons name="share-outline" size={18} color={colors.text} />
+                <Text style={[styles.bigBtnText, { color: colors.text, fontSize: 17 }]}>
+                  Share result
+                </Text>
+              </Chunky>
+            )}
+            {secondaryLabel && onSecondary && (
+              <Pressable onPress={onSecondary} style={styles.link} accessibilityRole="button">
+                <Text style={[styles.linkText, { color: onCard }]}>{secondaryLabel}</Text>
               </Pressable>
             )}
           </View>
-        </View>
+        </Card>
       </View>
     </Modal>
   );
@@ -106,48 +156,38 @@ export function ResultModal({
 const styles = StyleSheet.create({
   backdrop: {
     flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.55)',
+    backgroundColor: 'rgba(29,26,51,0.6)',
     alignItems: 'center',
     justifyContent: 'center',
     padding: 24,
   },
-  card: {
-    width: '100%',
-    maxWidth: 380,
-    padding: 24,
-    borderRadius: 16,
-    borderWidth: StyleSheet.hairlineWidth,
-    alignItems: 'center',
-    gap: 6,
-  },
+  card: { width: '100%', maxWidth: 380, padding: 24, alignItems: 'center', gap: 8 },
   iconWrap: {
-    width: 64,
-    height: 64,
-    borderRadius: 32,
+    width: 70,
+    height: 70,
+    borderRadius: 22,
+    borderWidth: OUTLINE + 0.5,
     alignItems: 'center',
     justifyContent: 'center',
     marginBottom: 6,
+    transform: [{ rotate: '-8deg' }],
   },
-  title: { fontSize: 22, fontWeight: '800', textAlign: 'center' },
-  subtitle: { fontSize: 14, textAlign: 'center' },
-  statsRow: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    justifyContent: 'center',
-    gap: 18,
-    marginTop: 14,
-    marginBottom: 6,
-  },
-  stat: { alignItems: 'center', minWidth: 80 },
-  statValue: { fontSize: 22, fontWeight: '800', fontVariant: ['tabular-nums'] },
-  statLabel: { fontSize: 11, textTransform: 'uppercase', letterSpacing: 0.6, marginTop: 2 },
-  actions: { width: '100%', gap: 8, marginTop: 14 },
-  primaryBtn: { paddingVertical: 12, borderRadius: 8, alignItems: 'center' },
-  secondaryBtn: {
-    paddingVertical: 12,
-    borderRadius: 8,
+  title: { fontSize: 32, textAlign: 'center' },
+  subtitle: { fontSize: 15, textAlign: 'center' },
+  guessGrid: { gap: 4, marginTop: 8 },
+  guessSq: { width: 22, height: 22, borderRadius: 5, borderWidth: OUTLINE },
+  statsRow: { flexDirection: 'row', gap: 8, marginTop: 12, alignSelf: 'stretch' },
+  stat: {
+    flex: 1,
     alignItems: 'center',
-    justifyContent: 'center',
-    borderWidth: StyleSheet.hairlineWidth,
+    paddingVertical: 10,
+    borderRadius: 16,
+    borderWidth: OUTLINE,
   },
+  actions: { alignSelf: 'stretch', gap: 10, marginTop: 14 },
+  bigBtn: { height: 52, alignItems: 'center', justifyContent: 'center' },
+  row: { flexDirection: 'row', gap: 8 },
+  bigBtnText: { fontFamily: fonts.displaySemi, fontSize: 19, color: INK },
+  link: { alignItems: 'center', paddingVertical: 10 },
+  linkText: { fontFamily: fonts.bodyHeavy, fontSize: 15, textDecorationLine: 'underline' },
 });

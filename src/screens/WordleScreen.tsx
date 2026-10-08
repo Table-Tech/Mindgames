@@ -1,7 +1,9 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { Alert, Platform, Pressable, StyleSheet, Text, View } from 'react-native';
+import { Alert, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useTheme } from '@/theme/ThemeProvider';
+import { fonts } from '@/theme/fonts';
+import { Body, Chunky, Display, formatClock, IconButton, ScreenHeader } from '@/ui/kit';
 import { WordleGrid } from '@/games/wordle/WordleGrid';
 import { Keyboard } from '@/games/wordle/Keyboard';
 import {
@@ -49,7 +51,7 @@ const newState = (mode: WordleMode): WordleState => ({
 });
 
 export function WordleScreen({ mode }: Props) {
-  const { colors } = useTheme();
+  const { colors, isDark } = useTheme();
   const { adsRemoved } = useEntitlements();
   const fb = useFeedback();
   const { prefs, setPref } = usePreferences();
@@ -207,41 +209,41 @@ export function WordleScreen({ mode }: Props) {
     state.outcome === 'playing'
       ? now - state.startedAt
       : (state.finishedAt ?? state.startedAt) - state.startedAt;
+  const guessNo = Math.min(state.guesses.length + 1, MAX_GUESSES);
 
   return (
-    <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
+    <SafeAreaView
+      style={[styles.container, { backgroundColor: isDark ? colors.background : '#FFF3C7' }]}
+    >
       <View style={styles.body}>
-        <View style={styles.header}>
-          <Text style={[styles.title, { color: colors.text }]}>
-            {mode.kind === 'daily' ? 'Daily Word' : 'Wordle'}
-          </Text>
-          <View style={styles.headerRight}>
-            <Text style={[styles.headerStat, { color: colors.textMuted }]}>
-              {state.guesses.length}/{MAX_GUESSES}
-            </Text>
-            <Text style={[styles.headerStat, { color: colors.textMuted }]}>
-              {formatTime(elapsed)}
-            </Text>
-          </View>
+        <ScreenHeader
+          title={mode.kind === 'daily' ? 'Daily Wordle' : 'Wordle'}
+          subtitle={`Guess ${guessNo} of ${MAX_GUESSES} · ${formatClock(elapsed)}`}
+          right={
+            mode.kind === 'random' ? (
+              <IconButton icon="refresh" label="New word" onPress={startNewGame} />
+            ) : undefined
+          }
+        />
+
+        <View style={styles.toastSlot}>
+          {toast && (
+            <View style={[styles.toast, { backgroundColor: colors.ink }]}>
+              <Body style={{ fontFamily: fonts.bodyHeavy, color: colors.onInk }}>{toast}</Body>
+            </View>
+          )}
         </View>
 
         <WordleGrid guesses={state.guesses} current={state.current} />
 
-        {toast && (
-          <View style={[styles.toast, { backgroundColor: colors.text }]}>
-            <Text style={{ color: colors.background, fontWeight: '600' }}>{toast}</Text>
-          </View>
-        )}
-
         <View style={{ flex: 1 }} />
 
         {state.outcome !== 'playing' && mode.kind === 'random' && (
-          <Pressable
-            onPress={startNewGame}
-            style={[styles.newGameBtn, { backgroundColor: colors.accent }]}
-          >
-            <Text style={{ color: '#fff', fontWeight: '700', fontSize: 16 }}>New Word</Text>
-          </Pressable>
+          <Chunky onPress={startNewGame} color={colors.wordle} contentStyle={styles.bigBtn}>
+            <Display style={{ fontFamily: fonts.displaySemi, fontSize: 18, color: '#1D1A33' }}>
+              New word
+            </Display>
+          </Chunky>
         )}
 
         <Keyboard
@@ -286,7 +288,8 @@ export function WordleScreen({ mode }: Props) {
       <ResultModal
         visible={resultVisible}
         won={state.outcome === 'won'}
-        title={state.outcome === 'won' ? 'Solved!' : 'Better luck next time'}
+        accent={colors.wordle}
+        title={state.outcome === 'won' ? 'Brilliant!' : 'So close'}
         subtitle={
           state.outcome === 'won'
             ? `Got it in ${state.guesses.length}/${MAX_GUESSES}`
@@ -296,6 +299,7 @@ export function WordleScreen({ mode }: Props) {
           { label: 'Guesses', value: `${state.guesses.length}/${MAX_GUESSES}` },
           { label: 'Time', value: formatTime(elapsed) },
         ]}
+        wordleGuesses={state.guesses}
         share={{
           game: 'wordle',
           timeMs: elapsed,
@@ -329,16 +333,8 @@ export function WordleScreen({ mode }: Props) {
 
 const styles = StyleSheet.create({
   container: { flex: 1 },
-  body: { flex: 1, padding: 12, gap: 14 },
-  header: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
-  title: { fontSize: 20, fontWeight: '800' },
-  headerRight: { flexDirection: 'row', gap: 12 },
-  headerStat: { fontSize: 14, fontVariant: ['tabular-nums'] },
-  toast: {
-    alignSelf: 'center',
-    paddingHorizontal: 14,
-    paddingVertical: 8,
-    borderRadius: 6,
-  },
-  newGameBtn: { paddingVertical: 14, borderRadius: 12, alignItems: 'center' },
+  body: { flex: 1, padding: 16, paddingTop: 8, gap: 12 },
+  toastSlot: { height: 36, alignItems: 'center', justifyContent: 'center' },
+  toast: { paddingHorizontal: 16, paddingVertical: 7, borderRadius: 999 },
+  bigBtn: { height: 52, alignItems: 'center', justifyContent: 'center' },
 });

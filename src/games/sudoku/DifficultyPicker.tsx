@@ -1,6 +1,8 @@
 import React from 'react';
-import { Pressable, ScrollView, StyleSheet, Text } from 'react-native';
+import { ScrollView, StyleSheet, Text } from 'react-native';
 import { useTheme } from '@/theme/ThemeProvider';
+import { fonts } from '@/theme/fonts';
+import { Chunky } from '@/ui/kit';
 import { DIFFICULTIES, Difficulty } from './types';
 
 const LABELS: Record<Difficulty, string> = {
@@ -25,21 +27,28 @@ export function DifficultyPicker({ value, onChange }: Props) {
       showsHorizontalScrollIndicator={false}
       contentContainerStyle={styles.row}
     >
-      <Text style={[styles.label, { color: colors.textMuted }]}>Difficulty:</Text>
       {DIFFICULTIES.map(d => {
         const active = d === value;
         return (
-          <Pressable key={d} onPress={() => onChange(d)} hitSlop={6}>
+          <Chunky
+            key={d}
+            onPress={() => onChange(d)}
+            selected={active}
+            depth={3}
+            radius={999}
+            color={active ? colors.ink : colors.surface}
+            contentStyle={styles.chip}
+          >
             <Text
               style={{
+                fontFamily: fonts.bodyHeavy,
                 fontSize: 14,
-                fontWeight: active ? '800' : '500',
-                color: active ? colors.accent : colors.textMuted,
+                color: active ? colors.onInk : colors.text,
               }}
             >
               {LABELS[d]}
             </Text>
-          </Pressable>
+          </Chunky>
         );
       })}
     </ScrollView>
@@ -47,6 +56,6 @@ export function DifficultyPicker({ value, onChange }: Props) {
 }
 
 const styles = StyleSheet.create({
-  row: { flexDirection: 'row', alignItems: 'center', gap: 14, paddingHorizontal: 4 },
-  label: { fontSize: 14, marginRight: 4 },
+  row: { flexDirection: 'row', gap: 8, paddingVertical: 2 },
+  chip: { height: 36, paddingHorizontal: 14, alignItems: 'center', justifyContent: 'center' },
 });

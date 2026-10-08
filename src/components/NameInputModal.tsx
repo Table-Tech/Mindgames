@@ -10,6 +10,8 @@ import {
   View,
 } from 'react-native';
 import { useTheme } from '@/theme/ThemeProvider';
+import { fonts } from '@/theme/fonts';
+import { Body, Card, Chunky, Display, OUTLINE } from '@/ui/kit';
 
 // Cross-platform replacement for Alert.prompt (which is iOS only).
 
@@ -45,21 +47,20 @@ export function NameInputModal({
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}
         style={styles.backdrop}
       >
-        <View
-          style={[styles.card, { backgroundColor: colors.surface, borderColor: colors.border }]}
-        >
-          <Text style={[styles.title, { color: colors.text }]}>{title}</Text>
-          {message && <Text style={[styles.message, { color: colors.textMuted }]}>{message}</Text>}
+        <Card radius={24} depth={6} style={styles.card}>
+          <Display style={{ fontSize: 24 }}>{title}</Display>
+          {message && <Body style={{ fontSize: 14, color: colors.textMuted }}>{message}</Body>}
           <TextInput
             value={value}
             onChangeText={setValue}
             placeholder={placeholder}
             placeholderTextColor={colors.textMuted}
+            accessibilityLabel={placeholder}
             style={[
               styles.input,
               {
                 color: colors.text,
-                borderColor: colors.border,
+                borderColor: colors.ink,
                 backgroundColor: colors.surfaceAlt,
               },
             ]}
@@ -70,18 +71,20 @@ export function NameInputModal({
           />
           <View style={styles.row}>
             {onDismiss && (
-              <Pressable onPress={onDismiss} style={[styles.btn, { borderColor: colors.border }]}>
-                <Text style={{ color: colors.text }}>Cancel</Text>
+              <Pressable onPress={onDismiss} style={styles.cancel} accessibilityRole="button">
+                <Text style={[styles.cancelText, { color: colors.text }]}>Skip</Text>
               </Pressable>
             )}
-            <Pressable
+            <Chunky
               onPress={() => onSubmit(value.trim())}
-              style={[styles.btn, { backgroundColor: colors.accent, borderColor: colors.accent }]}
+              color={colors.sudoku}
+              style={{ flex: 1 }}
+              contentStyle={styles.save}
             >
-              <Text style={{ color: '#fff', fontWeight: '600' }}>Save</Text>
-            </Pressable>
+              <Text style={styles.saveText}>Save</Text>
+            </Chunky>
           </View>
-        </View>
+        </Card>
       </KeyboardAvoidingView>
     </Modal>
   );
@@ -90,33 +93,23 @@ export function NameInputModal({
 const styles = StyleSheet.create({
   backdrop: {
     flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.5)',
+    backgroundColor: 'rgba(29,26,51,0.6)',
     alignItems: 'center',
     justifyContent: 'center',
     padding: 24,
   },
-  card: {
-    width: '100%',
-    maxWidth: 360,
-    padding: 20,
-    borderRadius: 12,
-    borderWidth: StyleSheet.hairlineWidth,
-    gap: 12,
-  },
-  title: { fontSize: 18, fontWeight: '700' },
-  message: { fontSize: 13 },
+  card: { width: '100%', maxWidth: 360, padding: 22, gap: 12 },
   input: {
-    paddingHorizontal: 12,
-    paddingVertical: 10,
-    borderRadius: 8,
-    borderWidth: StyleSheet.hairlineWidth,
-    fontSize: 16,
+    paddingHorizontal: 14,
+    paddingVertical: 12,
+    borderRadius: 14,
+    borderWidth: OUTLINE,
+    fontSize: 18,
+    fontFamily: fonts.body,
   },
-  row: { flexDirection: 'row', justifyContent: 'flex-end', gap: 8 },
-  btn: {
-    paddingHorizontal: 16,
-    paddingVertical: 10,
-    borderRadius: 8,
-    borderWidth: StyleSheet.hairlineWidth,
-  },
+  row: { flexDirection: 'row', alignItems: 'center', gap: 12 },
+  cancel: { paddingHorizontal: 12, paddingVertical: 12 },
+  cancelText: { fontFamily: fonts.bodyHeavy, fontSize: 15, textDecorationLine: 'underline' },
+  save: { height: 50, alignItems: 'center', justifyContent: 'center' },
+  saveText: { fontFamily: fonts.displaySemi, fontSize: 18, color: '#FFFFFF' },
 });

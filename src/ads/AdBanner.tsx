@@ -1,6 +1,7 @@
 import React from 'react';
 import { Text, View, StyleSheet } from 'react-native';
 import { useTheme } from '@/theme/ThemeProvider';
+import { fonts } from '@/theme/fonts';
 import { useEntitlements } from '@/iap/EntitlementsProvider';
 
 // TODO(ads): replace this stub with `react-native-google-mobile-ads`.
@@ -13,10 +14,10 @@ export function AdBanner() {
   const { adsRemoved } = useEntitlements();
   if (adsRemoved) return null;
   return (
-    <View
-      style={[styles.banner, { backgroundColor: colors.surfaceAlt, borderColor: colors.border }]}
-    >
-      <Text style={{ color: colors.textMuted, fontSize: 12 }}>Ad slot (AdMob banner)</Text>
+    <View style={[styles.banner, { backgroundColor: colors.surfaceAlt, borderColor: colors.ink }]}>
+      <Text style={{ fontFamily: fonts.body, color: colors.textMuted, fontSize: 12 }}>
+        Ad slot (AdMob banner)
+      </Text>
     </View>
   );
 }
@@ -26,6 +27,6 @@ const styles = StyleSheet.create({
     height: 56,
     alignItems: 'center',
     justifyContent: 'center',
-    borderTopWidth: StyleSheet.hairlineWidth,
+    borderTopWidth: 2,
   },
 });

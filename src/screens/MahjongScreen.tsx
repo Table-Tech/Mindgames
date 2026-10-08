@@ -1,8 +1,18 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { Alert, Platform, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Alert, ScrollView, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '@/theme/ThemeProvider';
+import { fonts } from '@/theme/fonts';
+import {
+  Body,
+  Card,
+  Display,
+  Eyebrow,
+  formatClock,
+  IconButton,
+  ScreenHeader,
+  ToolButton,
+} from '@/ui/kit';
 import { MahjongBoard } from '@/games/mahjong/MahjongBoard';
 import {
   dailySeed,
@@ -67,7 +77,7 @@ interface Snapshot {
 }
 
 export function MahjongScreen({ mode }: Props) {
-  const { colors } = useTheme();
+  const { colors, isDark } = useTheme();
   const { adsRemoved } = useEntitlements();
   const fb = useFeedback();
   const { prefs, setPref } = usePreferences();
@@ -290,65 +300,69 @@ export function MahjongScreen({ mode }: Props) {
       : (state.finishedAt ?? state.startedAt) - state.startedAt;
 
   return (
-    <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
-      <ScrollView contentContainerStyle={styles.scroll}>
-        <View style={styles.header}>
-          <Text style={[styles.title, { color: colors.text }]}>
-            {mode.kind === 'daily' ? 'Daily Mahjong' : 'Mahjong'}
-          </Text>
-          <Text style={[styles.headerStat, { color: colors.textMuted }]}>
-            {formatTime(elapsed)}
-          </Text>
-        </View>
+    <SafeAreaView
+      style={[styles.container, { backgroundColor: isDark ? colors.background : '#E3F7EE' }]}
+    >
+      <ScrollView contentContainerStyle={styles.scroll} showsVerticalScrollIndicator={false}>
+        <ScreenHeader
+          title={mode.kind === 'daily' ? 'Daily Mahjong' : 'Mahjong'}
+          subtitle="Match free pairs"
+          right={<IconButton icon="refresh" label="New game" onPress={startNewGame} />}
+        />
 
         <View style={styles.statsRow}>
+          <Stat label="Time" value={formatClock(elapsed)} />
           <Stat label="Tiles left" value={`${remaining}`} />
           <Stat label="Free" value={`${freeCount}`} />
           <Stat label="Score" value={`${state.score}`} />
         </View>
 
-        <ScrollView
-          horizontal
-          contentContainerStyle={{ paddingVertical: 4 }}
-          showsHorizontalScrollIndicator={false}
-        >
-          <MahjongBoard
-            tiles={state.tiles}
-            removed={state.removed}
-            selectedId={selectedId}
-            hintIds={hintIds}
-            onSelect={onSelect}
-          />
-        </ScrollView>
+        <Card color={colors.mahjong} radius={24} depth={5} style={styles.table}>
+          <ScrollView
+            horizontal
+            contentContainerStyle={{ paddingVertical: 10, paddingHorizontal: 6, flexGrow: 1 }}
+            showsHorizontalScrollIndicator={false}
+          >
+            <MahjongBoard
+              tiles={state.tiles}
+              removed={state.removed}
+              selectedId={selectedId}
+              hintIds={hintIds}
+              onSelect={onSelect}
+            />
+          </ScrollView>
+        </Card>
 
-        {toast && (
-          <View style={[styles.toast, { backgroundColor: colors.text }]}>
-            <Text style={{ color: colors.background, fontWeight: '600' }}>{toast}</Text>
-          </View>
-        )}
+        <View style={styles.toastSlot}>
+          {toast && (
+            <View style={[styles.toast, { backgroundColor: colors.ink }]}>
+              <Body style={{ fontFamily: fonts.bodyHeavy, color: colors.onInk }}>{toast}</Body>
+            </View>
+          )}
+        </View>
 
         <View style={styles.actionRow}>
-          <ActionButton
+          <ToolButton
             icon="arrow-undo"
             label="Undo"
             disabled={history.length === 0 || state.outcome !== 'playing'}
             onPress={undo}
           />
-          <ActionButton
+          <ToolButton
             icon="bulb-outline"
             label="Hint"
+            color={colors.wordle}
             badge={state.hintsLeft}
             disabled={state.hintsLeft === 0 || state.outcome !== 'playing'}
             onPress={useHint}
           />
-          <ActionButton
+          <ToolButton
             icon="shuffle"
             label="Shuffle"
             badge={state.shufflesLeft}
             disabled={state.shufflesLeft === 0 || state.outcome !== 'playing'}
             onPress={shuffleRemaining}
           />
-          <ActionButton icon="refresh" label="New" onPress={startNewGame} />
         </View>
       </ScrollView>
       <AdBanner />
@@ -387,7 +401,8 @@ export function MahjongScreen({ mode }: Props) {
       <ResultModal
         visible={resultVisible}
         won={state.outcome === 'won'}
-        title={state.outcome === 'won' ? 'Solved!' : 'No more moves'}
+        accent={colors.mahjong}
+        title={state.outcome === 'won' ? 'Board cleared!' : 'No more moves'}
         subtitle={state.outcome === 'won' ? 'All tiles cleared' : 'No matching free pairs left.'}
         stats={[
           { label: 'Time', value: formatTime(elapsed) },
@@ -422,82 +437,21 @@ export function MahjongScreen({ mode }: Props) {
 }
 
 function Stat({ label, value }: { label: string; value: string }) {
-  const { colors } = useTheme();
   return (
-    <View>
-      <Text style={{ fontSize: 12, color: colors.textMuted }}>{label}</Text>
-      <Text style={{ fontSize: 18, fontWeight: '700', color: colors.text }}>{value}</Text>
-    </View>
-  );
-}
-
-interface ActionBtnProps {
-  icon: keyof typeof Ionicons.glyphMap;
-  label: string;
-  onPress: () => void;
-  disabled?: boolean;
-  badge?: number;
-}
-
-function ActionButton({ icon, label, onPress, disabled, badge }: ActionBtnProps) {
-  const { colors } = useTheme();
-  return (
-    <Pressable
-      onPress={onPress}
-      disabled={disabled}
-      style={[
-        styles.actionBtn,
-        {
-          backgroundColor: colors.surfaceAlt,
-          borderColor: colors.border,
-          opacity: disabled ? 0.4 : 1,
-        },
-      ]}
-    >
-      <Ionicons name={icon} size={22} color={colors.text} />
-      <Text style={{ fontSize: 10, marginTop: 2, color: colors.textMuted }}>{label}</Text>
-      {badge != null && (
-        <View style={[styles.badge, { backgroundColor: colors.accent }]}>
-          <Text style={styles.badgeText}>{badge}</Text>
-        </View>
-      )}
-    </Pressable>
+    <Card depth={0} radius={14} style={styles.stat}>
+      <Eyebrow style={{ fontSize: 10, letterSpacing: 0.5 }}>{label}</Eyebrow>
+      <Display style={{ fontSize: 19, fontVariant: ['tabular-nums'] }}>{value}</Display>
+    </Card>
   );
 }
 
 const styles = StyleSheet.create({
   container: { flex: 1 },
-  scroll: { padding: 12, gap: 12 },
-  header: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
-  title: { fontSize: 20, fontWeight: '800' },
-  headerStat: { fontSize: 14, fontVariant: ['tabular-nums'] },
-  statsRow: { flexDirection: 'row', justifyContent: 'space-around' },
-  toast: {
-    alignSelf: 'center',
-    paddingHorizontal: 14,
-    paddingVertical: 8,
-    borderRadius: 6,
-  },
-  actionRow: { flexDirection: 'row', justifyContent: 'space-around', marginTop: 4 },
-  actionBtn: {
-    width: 64,
-    height: 56,
-    borderRadius: 12,
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderWidth: StyleSheet.hairlineWidth,
-    position: 'relative',
-  },
-  badge: {
-    position: 'absolute',
-    top: -4,
-    right: -4,
-    minWidth: 18,
-    height: 18,
-    paddingHorizontal: 4,
-    borderRadius: 9,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  badgeText: { color: '#fff', fontSize: 11, fontWeight: '700' },
+  scroll: { padding: 16, paddingTop: 8, gap: 14 },
+  statsRow: { flexDirection: 'row', gap: 8 },
+  stat: { flex: 1, alignItems: 'center', paddingVertical: 7 },
+  table: { overflow: 'hidden' },
+  toastSlot: { height: 34, alignItems: 'center', justifyContent: 'center' },
+  toast: { paddingHorizontal: 16, paddingVertical: 7, borderRadius: 999 },
+  actionRow: { flexDirection: 'row', gap: 10 },
 });

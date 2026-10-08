@@ -2,31 +2,35 @@ import React, { useCallback, useEffect, useState } from 'react';
 import { ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useFocusEffect } from '@react-navigation/native';
+import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '@/theme/ThemeProvider';
+import { fonts } from '@/theme/fonts';
+import { usePreferences } from '@/prefs/PreferencesProvider';
 import {
   computeStats,
   computeSudokuByDifficulty,
   formatTime,
   getRecords,
   winRate,
-  type DifficultyStats,
   type FinishRecord,
   type GameId,
-  type GameStats,
 } from '@/stats/stats';
+import { loadLeaderboard, todayISO, type LeaderboardEntry } from '@/leaderboard/leaderboard';
+import { Body, Card, Chunky, Display, Eyebrow, OUTLINE, Segmented, TabBar } from '@/ui/kit';
 
-const GAMES: { id: GameId; label: string }[] = [
-  { id: 'sudoku', label: 'Sudoku' },
-  { id: 'wordle', label: 'Wordle' },
-  { id: 'mahjong', label: 'Mahjong' },
-];
+const INK = '#1D1A33';
+
+type Tab = 'stats' | 'board';
 
 export function StatsScreen() {
   const { colors } = useTheme();
   const [records, setRecords] = useState<FinishRecord[] | null>(null);
+  const [board, setBoard] = useState<LeaderboardEntry[]>([]);
+  const [tab, setTab] = useState<Tab>('stats');
 
   const refresh = useCallback(() => {
     getRecords().then(setRecords);
+    loadLeaderboard().then(setBoard);
   }, []);
 
   useEffect(() => {
@@ -42,170 +46,332 @@ export function StatsScreen() {
     }, [refresh]),
   );
 
-  if (records === null) {
-    return <SafeAreaView style={{ flex: 1, backgroundColor: colors.background }} />;
-  }
-
   return (
-    <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
-      <ScrollView contentContainerStyle={styles.scroll}>
-        <Text style={[styles.title, { color: colors.text }]}>Statistics</Text>
-        <Text style={[styles.sub, { color: colors.textMuted }]}>Stored on this device only</Text>
-
-        {GAMES.map(g => (
-          <GameCard
-            key={g.id}
-            game={g.id}
-            label={g.label}
-            stats={computeStats(records, g.id)}
-            sudokuByDifficulty={g.id === 'sudoku' ? computeSudokuByDifficulty(records) : undefined}
-          />
-        ))}
-
-        {records.length === 0 && (
-          <Text style={[styles.empty, { color: colors.textMuted }]}>
-            No games finished yet. Play a daily or practice round to start tracking.
-          </Text>
+    <SafeAreaView
+      edges={['top']}
+      style={[styles.container, { backgroundColor: colors.background }]}
+    >
+      <ScrollView contentContainerStyle={styles.scroll} showsVerticalScrollIndicator={false}>
+        <Display style={{ fontSize: 30 }}>Your progress</Display>
+        <Segmented
+          options={[
+            { value: 'stats', label: 'My stats' },
+            { value: 'board', label: 'Leaderboard' },
+          ]}
+          value={tab}
+          onChange={setTab}
+        />
+        {records === null ? null : tab === 'stats' ? (
+          <MyStats records={records} />
+        ) : (
+          <Leaderboard entries={board} />
         )}
       </ScrollView>
+      <TabBar active="Stats" />
     </SafeAreaView>
   );
 }
 
-function GameCard({
-  game,
-  label,
-  stats,
-  sudokuByDifficulty,
-}: {
-  game: GameId;
-  label: string;
-  stats: GameStats;
-  sudokuByDifficulty?: DifficultyStats[];
-}) {
+// ---------- My stats ----------
+
+const GAMES: { id: GameId; label: string }[] = [
+  { id: 'sudoku', label: 'Sudoku' },
+  { id: 'wordle', label: 'Wordle' },
+  { id: 'mahjong', label: 'Mahjong' },
+];
+
+function shiftISO(iso: string, days: number) {
+  const [y, m, d] = iso.split('-').map(Number);
+  const date = new Date(Date.UTC(y, m - 1, d + days));
+  return date.toISOString().slice(0, 10);
+}
+
+function MyStats({ records }: { records: FinishRecord[] }) {
   const { colors } = useTheme();
+  const [game, setGame] = useState<GameId>('sudoku');
+
+  const all = GAMES.map(g => computeStats(records, g.id));
+  const currentStreak = Math.max(...all.map(s => s.currentStreak));
+  const bestStreak = Math.max(...all.map(s => s.bestStreak));
+
+  // Current week, Monday first, marked when any daily was won that day.
+  const today = todayISO();
+  const [y, m, d] = today.split('-').map(Number);
+  const weekday = (new Date(Date.UTC(y, m - 1, d)).getUTCDay() + 6) % 7;
+  const monday = shiftISO(today, -weekday);
+  const wonDays = new Set(
+    records.filter(r => r.mode === 'daily' && r.outcome === 'won').map(r => r.date),
+  );
+  const week = ['M', 'T', 'W', 'T', 'F', 'S', 'S'].map((label, i) => {
+    const iso = shiftISO(monday, i);
+    return { label, done: wonDays.has(iso), isToday: iso === today };
+  });
+
+  const gameColor = { sudoku: colors.sudoku, wordle: colors.wordle, mahjong: colors.mahjong }[game];
+  const gameFg = game === 'sudoku' ? '#FFFFFF' : INK;
+  const stats = computeStats(records, game);
+
+  const bars: { label: string; n: number }[] =
+    game === 'wordle'
+      ? stats.guessHistogram.map((n, i) => ({ label: `${i + 1}`, n }))
+      : game === 'sudoku'
+        ? computeSudokuByDifficulty(records).map(s => ({
+            label: s.difficulty[0].toUpperCase() + s.difficulty.slice(1),
+            n: s.won,
+          }))
+        : [];
+  const maxBar = Math.max(1, ...bars.map(b => b.n));
+
+  const tiles =
+    game === 'wordle'
+      ? [
+          ['Played', `${stats.played}`],
+          ['Win rate', `${winRate(stats)}%`],
+          ['Avg guesses', stats.avgGuesses != null ? `${stats.avgGuesses}` : '—'],
+          ['Best streak', `${stats.bestStreak}`],
+        ]
+      : [
+          ['Played', `${stats.played}`],
+          ['Win rate', `${winRate(stats)}%`],
+          ['Best time', formatTime(stats.bestTimeMs)],
+          ['Avg time', formatTime(stats.avgTimeMs)],
+        ];
+
   return (
-    <View style={[styles.card, { backgroundColor: colors.surface, borderColor: colors.border }]}>
-      <Text style={[styles.cardTitle, { color: colors.text }]}>{label}</Text>
-      <View style={styles.grid}>
-        <StatBox label="Played" value={`${stats.played}`} />
-        <StatBox label="Win rate" value={`${winRate(stats)}%`} />
-        <StatBox label="Best time" value={formatTime(stats.bestTimeMs)} />
-        <StatBox label="Avg time" value={formatTime(stats.avgTimeMs)} />
-        <StatBox label="Current streak" value={`${stats.currentStreak}`} accent />
-        <StatBox label="Best streak" value={`${stats.bestStreak}`} />
+    <View style={{ gap: 16 }}>
+      <Card color={colors.pink} radius={24} depth={5} style={styles.hero}>
+        <View style={styles.heroTop}>
+          <View>
+            <Eyebrow style={{ color: INK }}>Current streak</Eyebrow>
+            <Text style={styles.heroNumber}>
+              {currentStreak} {currentStreak === 1 ? 'day' : 'days'}
+            </Text>
+          </View>
+          <View style={[styles.heroIcon, { borderColor: colors.ink }]}>
+            <Ionicons name="flame" size={34} color={colors.pink} />
+          </View>
+        </View>
+        <View style={styles.week}>
+          {week.map((w, i) => (
+            <View key={i} style={{ alignItems: 'center', gap: 4 }}>
+              <View
+                style={[
+                  styles.weekDot,
+                  {
+                    borderColor: colors.ink,
+                    backgroundColor: w.done ? colors.ink : '#FFFFFF',
+                    borderWidth: w.isToday ? 3 : OUTLINE,
+                  },
+                ]}
+              >
+                {w.done && <Ionicons name="checkmark" size={16} color="#FFFFFF" />}
+              </View>
+              <Text style={styles.weekLabel}>{w.label}</Text>
+            </View>
+          ))}
+        </View>
+        <Text style={styles.heroFoot}>Best streak: {bestStreak} days</Text>
+      </Card>
+
+      <View style={{ flexDirection: 'row', gap: 8 }}>
+        {GAMES.map(g => {
+          const on = g.id === game;
+          const c = { sudoku: colors.sudoku, wordle: colors.wordle, mahjong: colors.mahjong }[g.id];
+          return (
+            <Chunky
+              key={g.id}
+              onPress={() => setGame(g.id)}
+              selected={on}
+              depth={3}
+              radius={999}
+              color={on ? c : colors.surface}
+              style={{ flex: 1 }}
+              contentStyle={styles.gameChip}
+            >
+              <Text
+                style={{
+                  fontFamily: fonts.bodyHeavy,
+                  fontSize: 14,
+                  color: on ? (g.id === 'sudoku' ? '#FFFFFF' : INK) : colors.text,
+                }}
+              >
+                {g.label}
+              </Text>
+            </Chunky>
+          );
+        })}
       </View>
 
-      {game === 'wordle' && stats.avgGuesses != null && (
-        <View style={{ marginTop: 12 }}>
-          <Text style={[styles.subHeading, { color: colors.textMuted }]}>
-            Guess distribution · avg {stats.avgGuesses}
-          </Text>
-          <GuessHistogram histogram={stats.guessHistogram} />
-        </View>
-      )}
+      <View style={styles.tileGrid}>
+        {tiles.map(([label, value]) => (
+          <Card key={label} radius={18} style={styles.tile}>
+            <Body style={{ fontSize: 12, color: colors.textMuted }}>{label}</Body>
+            <Display style={{ fontSize: 28, fontVariant: ['tabular-nums'] }}>{value}</Display>
+          </Card>
+        ))}
+      </View>
 
-      {sudokuByDifficulty && sudokuByDifficulty.some(d => d.played > 0) && (
-        <View style={{ marginTop: 12 }}>
-          <Text style={[styles.subHeading, { color: colors.textMuted }]}>By difficulty</Text>
-          <View style={styles.diffTable}>
-            <View style={[styles.diffRow, styles.diffHeader]}>
-              <Text style={[styles.diffCell, { color: colors.textMuted, flex: 1.4 }]}>Level</Text>
-              <Text style={[styles.diffCell, { color: colors.textMuted }]}>Wins</Text>
-              <Text style={[styles.diffCell, { color: colors.textMuted }]}>Best</Text>
-              <Text style={[styles.diffCell, { color: colors.textMuted }]}>Avg</Text>
-            </View>
-            {sudokuByDifficulty.map(d => (
-              <View key={d.difficulty} style={styles.diffRow}>
-                <Text style={[styles.diffCell, { color: colors.text, flex: 1.4 }]}>
-                  {d.difficulty[0].toUpperCase() + d.difficulty.slice(1)}
-                </Text>
-                <Text style={[styles.diffCell, { color: colors.text }]}>
-                  {d.won}/{d.played}
-                </Text>
-                <Text style={[styles.diffCell, { color: colors.text }]}>
-                  {formatTime(d.bestTimeMs)}
-                </Text>
-                <Text style={[styles.diffCell, { color: colors.text }]}>
-                  {formatTime(d.avgTimeMs)}
-                </Text>
+      {bars.length > 0 && bars.some(b => b.n > 0) && (
+        <Card radius={20} style={{ padding: 16, gap: 10 }}>
+          <Display style={{ fontFamily: fonts.displaySemi, fontSize: 18 }}>
+            {game === 'wordle' ? 'Guess distribution' : 'Wins by difficulty'}
+          </Display>
+          {bars.map(b => (
+            <View key={b.label} style={styles.barRow}>
+              <Body style={{ width: 58, fontFamily: fonts.bodyHeavy, fontSize: 12 }}>
+                {b.label}
+              </Body>
+              <View style={[styles.barTrack, { backgroundColor: colors.surfaceAlt }]}>
+                <View
+                  style={[
+                    styles.bar,
+                    {
+                      width: `${Math.max(12, (b.n / maxBar) * 100)}%`,
+                      backgroundColor: gameColor,
+                      borderColor: colors.ink,
+                    },
+                  ]}
+                >
+                  <Text style={{ fontFamily: fonts.bodyHeavy, fontSize: 11, color: gameFg }}>
+                    {b.n}
+                  </Text>
+                </View>
               </View>
-            ))}
-          </View>
-        </View>
+            </View>
+          ))}
+        </Card>
+      )}
+
+      {records.length === 0 && (
+        <Body style={{ textAlign: 'center', color: colors.textMuted, paddingHorizontal: 24 }}>
+          No games finished yet. Play a daily or free-play round to start tracking.
+        </Body>
       )}
     </View>
   );
 }
 
-function StatBox({ label, value, accent }: { label: string; value: string; accent?: boolean }) {
-  const { colors } = useTheme();
-  return (
-    <View style={styles.box}>
-      <Text style={[styles.boxLabel, { color: colors.textMuted }]}>{label}</Text>
-      <Text style={[styles.boxValue, { color: accent ? colors.accent : colors.text }]}>
-        {value}
-      </Text>
-    </View>
-  );
-}
+// ---------- Leaderboard ----------
 
-function GuessHistogram({ histogram }: { histogram: number[] }) {
+function Leaderboard({ entries }: { entries: LeaderboardEntry[] }) {
   const { colors } = useTheme();
-  const max = Math.max(1, ...histogram);
+  const { prefs } = usePreferences();
+  const today = todayISO();
+  const todays = entries.filter(e => e.date === today);
+  const medals = [colors.wordle, '#D9D6E8', '#F2A26B'];
+
+  if (todays.length === 0) {
+    return (
+      <Body style={{ textAlign: 'center', color: colors.textMuted, marginTop: 24 }}>
+        No scores yet today. Solve a daily challenge!
+      </Body>
+    );
+  }
+
   return (
-    <View style={{ gap: 4, marginTop: 6 }}>
-      {histogram.map((count, i) => (
-        <View key={i} style={styles.histRow}>
-          <Text style={[styles.histLabel, { color: colors.textMuted }]}>{i + 1}</Text>
-          <View style={[styles.histBarBg, { backgroundColor: colors.surfaceAlt }]}>
+    <View style={{ gap: 10 }}>
+      <Body style={{ fontSize: 14, color: colors.textMuted }}>
+        Today's dailies · fastest times on this device
+      </Body>
+      {todays.map((e, i) => {
+        const me = !!prefs.playerName && e.name === prefs.playerName;
+        return (
+          <Card
+            key={`${e.name}-${i}`}
+            color={me ? colors.sunflower : colors.surface}
+            radius={18}
+            depth={me ? 4 : 3}
+            style={styles.lbRow}
+          >
             <View
               style={[
-                styles.histBar,
-                {
-                  width: `${(count / max) * 100}%`,
-                  backgroundColor: colors.accent,
-                },
+                styles.medal,
+                { backgroundColor: medals[i] ?? colors.surface, borderColor: colors.ink },
               ]}
-            />
-          </View>
-          <Text style={[styles.histCount, { color: colors.text }]}>{count}</Text>
-        </View>
-      ))}
+            >
+              <Text style={{ fontFamily: fonts.display, fontSize: 16, color: INK }}>{i + 1}</Text>
+            </View>
+            <Body
+              style={{
+                flex: 1,
+                fontFamily: fonts.bodyHeavy,
+                fontSize: 16,
+                color: me ? INK : colors.text,
+              }}
+              numberOfLines={1}
+            >
+              {e.name}
+              {e.game ? ` · ${e.game[0].toUpperCase() + e.game.slice(1)}` : ''}
+            </Body>
+            <Display
+              style={{
+                fontFamily: fonts.displaySemi,
+                fontSize: 18,
+                fontVariant: ['tabular-nums'],
+                color: me ? INK : colors.text,
+              }}
+            >
+              {formatTime(e.timeMs)}
+            </Display>
+          </Card>
+        );
+      })}
     </View>
   );
 }
 
 const styles = StyleSheet.create({
   container: { flex: 1 },
-  scroll: { padding: 16, gap: 12 },
-  title: { fontSize: 28, fontWeight: '800' },
-  sub: { fontSize: 13, marginBottom: 8 },
-  card: {
-    padding: 16,
-    borderRadius: 12,
-    borderWidth: StyleSheet.hairlineWidth,
-    gap: 8,
+  scroll: { padding: 16, paddingTop: 12, gap: 16 },
+  hero: { padding: 18, paddingHorizontal: 20, gap: 14 },
+  heroTop: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
+  heroNumber: { fontFamily: fonts.display, fontSize: 46, lineHeight: 50, color: INK },
+  heroIcon: {
+    width: 64,
+    height: 64,
+    borderRadius: 20,
+    borderWidth: OUTLINE + 0.5,
+    backgroundColor: '#FFFFFF',
+    alignItems: 'center',
+    justifyContent: 'center',
+    transform: [{ rotate: '8deg' }],
   },
-  cardTitle: { fontSize: 20, fontWeight: '700' },
-  grid: {
+  week: { flexDirection: 'row', justifyContent: 'space-between' },
+  weekDot: {
+    width: 34,
+    height: 34,
+    borderRadius: 10,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  weekLabel: { fontFamily: fonts.bodyHeavy, fontSize: 11, color: INK },
+  heroFoot: { fontFamily: fonts.bodyHeavy, fontSize: 13, color: INK },
+  gameChip: { height: 40, alignItems: 'center', justifyContent: 'center' },
+  tileGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 10 },
+  tile: { width: '48%', flexGrow: 1, padding: 14 },
+  barRow: { flexDirection: 'row', alignItems: 'center', gap: 10 },
+  barTrack: { flex: 1, height: 24, borderRadius: 8, overflow: 'hidden' },
+  bar: {
+    height: '100%',
+    borderRadius: 8,
+    borderWidth: OUTLINE,
+    alignItems: 'flex-end',
+    justifyContent: 'center',
+    paddingRight: 6,
+  },
+  lbRow: {
     flexDirection: 'row',
-    flexWrap: 'wrap',
+    alignItems: 'center',
     gap: 12,
-    marginTop: 6,
+    paddingVertical: 10,
+    paddingHorizontal: 14,
   },
-  box: { width: '30%' },
-  boxLabel: { fontSize: 11, marginBottom: 2 },
-  boxValue: { fontSize: 18, fontWeight: '700', fontVariant: ['tabular-nums'] },
-  subHeading: { fontSize: 12, textTransform: 'uppercase', letterSpacing: 0.5 },
-  histRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
-  histLabel: { width: 12, fontSize: 12, fontWeight: '600' },
-  histBarBg: { flex: 1, height: 16, borderRadius: 4, overflow: 'hidden' },
-  histBar: { height: '100%' },
-  histCount: { width: 28, textAlign: 'right', fontSize: 12, fontVariant: ['tabular-nums'] },
-  empty: { textAlign: 'center', marginTop: 24, paddingHorizontal: 24 },
-  diffTable: { marginTop: 6 },
-  diffRow: { flexDirection: 'row', paddingVertical: 4 },
-  diffHeader: { borderBottomWidth: StyleSheet.hairlineWidth, borderColor: '#888', marginBottom: 2 },
-  diffCell: { flex: 1, fontSize: 12, fontVariant: ['tabular-nums'] },
+  medal: {
+    width: 34,
+    height: 34,
+    borderRadius: 11,
+    borderWidth: OUTLINE,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
 });

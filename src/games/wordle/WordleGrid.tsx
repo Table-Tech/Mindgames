@@ -1,6 +1,8 @@
 import React from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 import { useTheme } from '@/theme/ThemeProvider';
+import { fonts } from '@/theme/fonts';
+import type { ThemeColors } from '@/theme/colors';
 import type { Guess, LetterState } from './types';
 import { MAX_GUESSES, WORD_LENGTH } from './types';
 
@@ -19,7 +21,7 @@ export function WordleGrid({ guesses, current }: Props) {
   }
   if (rows.length < MAX_GUESSES) {
     rows.push({
-      letters: current.padEnd(WORD_LENGTH, ' ').split(''),
+      letters: current.toUpperCase().padEnd(WORD_LENGTH, ' ').split(''),
       states: new Array(WORD_LENGTH).fill('pending'),
     });
   }
@@ -36,13 +38,22 @@ export function WordleGrid({ guesses, current }: Props) {
         <View key={ri} style={styles.row}>
           {row.letters.map((ch, ci) => {
             const filled = ch.trim().length > 0;
-            const bg = colorFor(row.states[ci], colors);
-            const border = row.states[ci] === 'pending' && filled ? colors.text : colors.border;
-            const fg =
-              row.states[ci] === 'empty' || row.states[ci] === 'pending' ? colors.text : '#fff';
+            const t = tileStyle(row.states[ci], filled, colors);
             return (
-              <View key={ci} style={[styles.tile, { backgroundColor: bg, borderColor: border }]}>
-                <Text style={[styles.letter, { color: fg }]}>{ch.trim()}</Text>
+              <View
+                key={ci}
+                style={[
+                  styles.tile,
+                  {
+                    backgroundColor: t.bg,
+                    borderColor: t.border,
+                    borderBottomWidth: 2.5 + t.lift,
+                  },
+                ]}
+              >
+                <Text allowFontScaling={false} style={[styles.letter, { color: t.fg }]}>
+                  {ch.trim()}
+                </Text>
               </View>
             );
           })}
@@ -52,32 +63,37 @@ export function WordleGrid({ guesses, current }: Props) {
   );
 }
 
-function colorFor(state: LetterState, colors: ReturnType<typeof useTheme>['colors']) {
+export function letterColors(state: LetterState | undefined, colors: ThemeColors) {
   switch (state) {
     case 'correct':
-      return '#4caf6f';
+      return { bg: colors.wordleCorrect, fg: '#FFFFFF' };
     case 'present':
-      return '#d9a93a';
+      return { bg: colors.wordlePresent, fg: '#1D1A33' };
     case 'absent':
-      return '#787c7e';
-    case 'pending':
-      return colors.surface;
-    case 'empty':
+      return { bg: colors.wordleAbsent, fg: colors.text };
     default:
-      return colors.surface;
+      return null;
   }
 }
 
+function tileStyle(state: LetterState, filled: boolean, colors: ThemeColors) {
+  const scored = letterColors(state, colors);
+  if (scored) return { ...scored, border: colors.ink, lift: 3 };
+  if (state === 'pending' && filled)
+    return { bg: colors.surface, fg: colors.text, border: colors.ink, lift: 2 };
+  return { bg: colors.surface, fg: colors.text, border: colors.gridLine, lift: 0 };
+}
+
 const styles = StyleSheet.create({
-  grid: { gap: 6, alignSelf: 'center' },
-  row: { flexDirection: 'row', gap: 6 },
+  grid: { gap: 7, alignSelf: 'center' },
+  row: { flexDirection: 'row', gap: 7 },
   tile: {
-    width: 56,
-    height: 56,
-    borderWidth: 2,
-    borderRadius: 6,
+    width: 58,
+    height: 58,
+    borderWidth: 2.5,
+    borderRadius: 12,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  letter: { fontSize: 28, fontWeight: '800' },
+  letter: { fontFamily: fonts.display, fontSize: 30 },
 });

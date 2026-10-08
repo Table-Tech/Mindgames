@@ -5,10 +5,11 @@ import { freeTiles } from './engine';
 import { GRID_H, GRID_W, MAX_Z } from './layout';
 import type { Tile } from './types';
 
-const TILE_W = 30;
-const TILE_H = 38;
+const TILE_W = 32;
+const TILE_H = 42;
+const EDGE = 4; // visible tile thickness under the face
 const Z_OFFSET_X = 4; // each layer shifts right
-const Z_OFFSET_Y = -4; // and up, giving a 3D look
+const Z_OFFSET_Y = -5; // and up, giving a 3D look
 
 interface Props {
   tiles: Tile[];
@@ -19,7 +20,7 @@ interface Props {
 }
 
 export function MahjongBoard({ tiles, removed, selectedId, hintIds, onSelect }: Props) {
-  const { colors, isDark } = useTheme();
+  const { colors } = useTheme();
 
   const freeIds = useMemo(() => {
     const s = new Set<number>();
@@ -39,7 +40,7 @@ export function MahjongBoard({ tiles, removed, selectedId, hintIds, onSelect }: 
   );
 
   const boardWidth = GRID_W * TILE_W + (MAX_Z + 1) * Math.abs(Z_OFFSET_X);
-  const boardHeight = GRID_H * TILE_H + (MAX_Z + 1) * Math.abs(Z_OFFSET_Y);
+  const boardHeight = GRID_H * TILE_H + (MAX_Z + 1) * Math.abs(Z_OFFSET_Y) + EDGE;
 
   return (
     <View style={[styles.board, { width: boardWidth, height: boardHeight }]}>
@@ -51,38 +52,33 @@ export function MahjongBoard({ tiles, removed, selectedId, hintIds, onSelect }: 
         const top = t.pos.y * TILE_H + MAX_Z * -Z_OFFSET_Y + t.pos.z * Z_OFFSET_Y;
         const zIndex = t.pos.z * 100 + t.pos.y * 10 + t.pos.x;
 
-        const baseBg = isDark ? '#1f232c' : '#fbf6e9';
-        const lockedBg = isDark ? '#13161c' : '#e8e2d0';
+        const face = isSelected ? colors.sunflower : isHint ? colors.accentMuted : colors.tileFace;
 
         return (
           <Pressable
             key={t.id}
             disabled={!free}
             onPress={() => onSelect(t.id)}
+            accessibilityLabel={`Tile ${t.glyph}${free ? '' : ', blocked'}`}
             style={[
               styles.tile,
               {
                 left,
                 top,
                 width: TILE_W,
-                height: TILE_H,
-                backgroundColor: isSelected ? colors.accent : free ? baseBg : lockedBg,
-                borderColor: isHint ? colors.accent : colors.border,
-                borderWidth: isHint ? 2 : StyleSheet.hairlineWidth,
+                height: TILE_H + EDGE,
+                backgroundColor: face,
+                borderColor: colors.ink,
+                borderBottomColor: isSelected ? '#B8860B' : colors.tileEdge,
                 zIndex,
-                opacity: free ? 1 : 0.85,
               },
             ]}
           >
-            <Text
-              style={{
-                fontSize: 20,
-                color: isSelected ? '#fff' : free ? colors.text : colors.textMuted,
-              }}
-              allowFontScaling={false}
-            >
+            <Text style={{ fontSize: 22, color: '#1D1A33' }} allowFontScaling={false}>
               {t.glyph}
             </Text>
+            {/* Blocked tiles get a soft shade so the playable ones pop. */}
+            {!free && <View pointerEvents="none" style={styles.shade} />}
           </Pressable>
         );
       })}
@@ -94,8 +90,12 @@ const styles = StyleSheet.create({
   board: { position: 'relative', alignSelf: 'center' },
   tile: {
     position: 'absolute',
-    borderRadius: 4,
+    borderRadius: 7,
+    borderWidth: 1.5,
+    borderBottomWidth: EDGE + 1.5,
     alignItems: 'center',
     justifyContent: 'center',
+    overflow: 'hidden',
   },
+  shade: { ...StyleSheet.absoluteFillObject, backgroundColor: 'rgba(29,26,51,0.16)' },
 });

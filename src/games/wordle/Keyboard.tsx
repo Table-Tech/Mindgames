@@ -1,7 +1,10 @@
 import React from 'react';
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { StyleSheet, Text, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '@/theme/ThemeProvider';
+import { fonts } from '@/theme/fonts';
+import { Chunky } from '@/ui/kit';
+import { letterColors } from './WordleGrid';
 import type { LetterState } from './types';
 
 const ROWS = [
@@ -19,43 +22,40 @@ interface Props {
 export function Keyboard({ letterStates, onKey, disabled }: Props) {
   const { colors } = useTheme();
   return (
-    <View style={styles.keyboard}>
+    <View style={[styles.keyboard, { opacity: disabled ? 0.5 : 1 }]}>
       {ROWS.map((row, ri) => (
         <View key={ri} style={styles.row}>
           {row.map(k => {
             const wide = k === 'ENTER' || k === 'BACK';
-            const state = letterStates[k];
-            let bg = colors.surfaceAlt;
-            let fg = colors.text;
-            if (state === 'correct') {
-              bg = '#4caf6f';
-              fg = '#fff';
-            } else if (state === 'present') {
-              bg = '#d9a93a';
-              fg = '#fff';
-            } else if (state === 'absent') {
-              bg = '#787c7e';
-              fg = '#fff';
+            const scored = letterColors(letterStates[k], colors);
+            let bg = scored?.bg ?? colors.surface;
+            let fg = scored?.fg ?? colors.text;
+            if (k === 'ENTER') {
+              bg = colors.ink;
+              fg = colors.onInk;
             }
-
             return (
-              <Pressable
+              <Chunky
                 key={k}
                 onPress={() => !disabled && onKey(k)}
-                style={[
-                  styles.key,
-                  wide && styles.wideKey,
-                  { backgroundColor: bg, opacity: disabled ? 0.5 : 1 },
-                ]}
+                accessibilityLabel={k === 'BACK' ? 'Delete' : k === 'ENTER' ? 'Enter' : k}
+                depth={3}
+                radius={10}
+                color={bg}
+                style={{ flex: wide ? 1.6 : 1, minWidth: 0 }}
+                contentStyle={styles.key}
               >
                 {k === 'BACK' ? (
-                  <Ionicons name="backspace-outline" size={20} color={fg} />
-                ) : k === 'ENTER' ? (
-                  <Text style={[styles.keyText, { color: fg, fontSize: 12 }]}>ENTER</Text>
+                  <Ionicons name="backspace-outline" size={22} color={fg} />
                 ) : (
-                  <Text style={[styles.keyText, { color: fg }]}>{k.toUpperCase()}</Text>
+                  <Text
+                    allowFontScaling={false}
+                    style={[styles.keyText, { color: fg, fontSize: k === 'ENTER' ? 13 : 20 }]}
+                  >
+                    {k.toUpperCase()}
+                  </Text>
                 )}
-              </Pressable>
+              </Chunky>
             );
           })}
         </View>
@@ -65,16 +65,8 @@ export function Keyboard({ letterStates, onKey, disabled }: Props) {
 }
 
 const styles = StyleSheet.create({
-  keyboard: { gap: 6, alignSelf: 'stretch' },
-  row: { flexDirection: 'row', justifyContent: 'center', gap: 4 },
-  key: {
-    flex: 1,
-    height: 48,
-    borderRadius: 6,
-    alignItems: 'center',
-    justifyContent: 'center',
-    minWidth: 0,
-  },
-  wideKey: { flex: 1.5 },
-  keyText: { fontSize: 16, fontWeight: '700' },
+  keyboard: { gap: 7, alignSelf: 'stretch' },
+  row: { flexDirection: 'row', justifyContent: 'center', gap: 5 },
+  key: { height: 52, alignItems: 'center', justifyContent: 'center' },
+  keyText: { fontFamily: fonts.displaySemi },
 });

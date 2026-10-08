@@ -11,6 +11,8 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useTheme } from '@/theme/ThemeProvider';
+import { fonts } from '@/theme/fonts';
+import { Body, Card, Chunky, Display, Eyebrow, OUTLINE, Segmented, TabBar, Toggle } from '@/ui/kit';
 import { useEntitlements } from '@/iap/EntitlementsProvider';
 import { usePreferences, type ThemeMode } from '@/prefs/PreferencesProvider';
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -107,199 +109,196 @@ export function SettingsScreen() {
   };
 
   return (
-    <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
-      <ScrollView contentContainerStyle={styles.scroll}>
-        <Text style={[styles.title, { color: colors.text }]}>Settings</Text>
+    <SafeAreaView
+      edges={['top']}
+      style={[styles.container, { backgroundColor: colors.background }]}
+    >
+      <ScrollView
+        contentContainerStyle={styles.scroll}
+        keyboardShouldPersistTaps="handled"
+        showsVerticalScrollIndicator={false}
+      >
+        <Display style={{ fontSize: 30 }}>Settings</Display>
 
-        <Section title="Appearance">
-          <Row label="Theme">
-            <View style={styles.segmented}>
-              {themeOptions.map(opt => {
-                const active = prefs.themeMode === opt.value;
-                return (
-                  <Pressable
-                    key={opt.value}
-                    onPress={() => setPref('themeMode', opt.value)}
-                    style={[
-                      styles.segment,
-                      {
-                        backgroundColor: active ? colors.accent : 'transparent',
-                        borderColor: colors.border,
-                      },
-                    ]}
-                  >
-                    <Text style={{ color: active ? '#fff' : colors.text }}>{opt.label}</Text>
-                  </Pressable>
-                );
-              })}
-            </View>
-          </Row>
-        </Section>
-
-        <Section title="Feedback">
-          <SwitchRow
-            label="Sound effects"
-            value={prefs.soundEnabled}
-            onChange={v => setPref('soundEnabled', v)}
-          />
-          <SwitchRow
-            label="Haptic feedback"
-            value={prefs.hapticsEnabled}
-            onChange={v => setPref('hapticsEnabled', v)}
-          />
-        </Section>
-
-        <Section title="Sudoku">
-          <SwitchRow
-            label="Auto-clear notes when placing a value"
-            value={prefs.sudokuAutoCleanupNotes}
-            onChange={v => setPref('sudokuAutoCleanupNotes', v)}
-          />
-          <SwitchRow
-            label="Highlight mistakes in red"
-            value={prefs.sudokuHighlightMistakes}
-            onChange={v => setPref('sudokuHighlightMistakes', v)}
-          />
-        </Section>
-
-        <Section title="Wordle">
-          <SwitchRow
-            label="Hard mode (revealed hints must be used)"
-            value={prefs.wordleHardMode}
-            onChange={v => setPref('wordleHardMode', v)}
-          />
-        </Section>
-
-        <Section title="Daily reminder">
-          <SwitchRow
-            label="Notify me when a new daily is available"
-            value={prefs.dailyReminderEnabled}
-            onChange={async v => {
-              if (v) {
-                const granted = await ensurePermission();
-                if (!granted) {
-                  Alert.alert(
-                    'Permission denied',
-                    'Enable notifications for Puzzaro in system settings to use reminders.',
-                  );
-                  return;
-                }
-                await scheduleDailyReminder(prefs.dailyReminderHour, prefs.dailyReminderMinute);
-              } else {
-                await cancelDailyReminder();
-              }
-              setPref('dailyReminderEnabled', v);
-            }}
-          />
-          {prefs.dailyReminderEnabled && (
-            <Row label="Time">
-              <TimeStepper
-                hour={prefs.dailyReminderHour}
-                minute={prefs.dailyReminderMinute}
-                onChange={async (h, m) => {
-                  setPref('dailyReminderHour', h);
-                  setPref('dailyReminderMinute', m);
-                  await scheduleDailyReminder(h, m);
-                }}
-              />
-            </Row>
-          )}
-        </Section>
-
-        <Section title="Profile">
-          <Row label="Leaderboard name">
+        <Card radius={22} style={styles.profile}>
+          <View
+            style={[styles.avatar, { backgroundColor: colors.wordle, borderColor: colors.ink }]}
+          >
+            <Text style={styles.avatarText}>{(nameDraft.trim()[0] ?? '?').toUpperCase()}</Text>
+          </View>
+          <View style={{ flex: 1, minWidth: 0 }}>
+            <Eyebrow style={{ fontSize: 11, letterSpacing: 0.4 }}>Leaderboard name</Eyebrow>
             <TextInput
               value={nameDraft}
               onChangeText={setNameDraft}
               onBlur={() => setPref('playerName', nameDraft.trim())}
               placeholder="Anon"
               placeholderTextColor={colors.textMuted}
-              style={[
-                styles.input,
-                {
-                  color: colors.text,
-                  borderColor: colors.border,
-                  backgroundColor: colors.surface,
-                },
-              ]}
+              accessibilityLabel="Leaderboard name"
+              style={[styles.nameInput, { color: colors.text }]}
               maxLength={16}
             />
-          </Row>
+          </View>
+          <View
+            style={[
+              styles.syncPill,
+              { borderColor: colors.ink, backgroundColor: colors.surfaceAlt },
+            ]}
+          >
+            <Ionicons name="cloud-done-outline" size={14} color={colors.text} />
+            <Text style={[styles.syncPillText, { color: colors.text }]}>
+              {formatLastSynced(lastSyncedAt)}
+            </Text>
+          </View>
+        </Card>
+
+        <Section title="Appearance">
+          <Segmented
+            options={themeOptions}
+            value={prefs.themeMode}
+            onChange={v => setPref('themeMode', v)}
+          />
+        </Section>
+
+        <Section title="Game feel">
+          <Group>
+            <SwitchRow
+              label="Sounds"
+              sub="Pops, chimes and fanfares"
+              value={prefs.soundEnabled}
+              onChange={v => setPref('soundEnabled', v)}
+            />
+            <SwitchRow
+              label="Haptics"
+              sub="Little buzzes on every tap"
+              value={prefs.hapticsEnabled}
+              onChange={v => setPref('hapticsEnabled', v)}
+            />
+          </Group>
+        </Section>
+
+        <Section title="Sudoku">
+          <Group>
+            <SwitchRow
+              label="Auto-clear notes"
+              sub="Remove notes when placing a value"
+              value={prefs.sudokuAutoCleanupNotes}
+              onChange={v => setPref('sudokuAutoCleanupNotes', v)}
+            />
+            <SwitchRow
+              label="Highlight mistakes"
+              sub="Show wrong numbers in red"
+              value={prefs.sudokuHighlightMistakes}
+              onChange={v => setPref('sudokuHighlightMistakes', v)}
+            />
+          </Group>
+        </Section>
+
+        <Section title="Wordle">
+          <Group>
+            <SwitchRow
+              label="Hard mode"
+              sub="Revealed hints must be used"
+              value={prefs.wordleHardMode}
+              onChange={v => setPref('wordleHardMode', v)}
+            />
+          </Group>
+        </Section>
+
+        <Section title="Daily reminder">
+          <Group>
+            <SwitchRow
+              label="Daily reminder"
+              sub="Nudge me when new puzzles drop"
+              value={prefs.dailyReminderEnabled}
+              onChange={async v => {
+                if (v) {
+                  const granted = await ensurePermission();
+                  if (!granted) {
+                    Alert.alert(
+                      'Permission denied',
+                      'Enable notifications for Puzzaro in system settings to use reminders.',
+                    );
+                    return;
+                  }
+                  await scheduleDailyReminder(prefs.dailyReminderHour, prefs.dailyReminderMinute);
+                } else {
+                  await cancelDailyReminder();
+                }
+                setPref('dailyReminderEnabled', v);
+              }}
+            />
+            {prefs.dailyReminderEnabled && (
+              <Row label="Time">
+                <TimeStepper
+                  hour={prefs.dailyReminderHour}
+                  minute={prefs.dailyReminderMinute}
+                  onChange={async (h, m) => {
+                    setPref('dailyReminderHour', h);
+                    setPref('dailyReminderMinute', m);
+                    await scheduleDailyReminder(h, m);
+                  }}
+                />
+              </Row>
+            )}
+          </Group>
         </Section>
 
         <Section title="Cloud sync">
-          <Row label="Last synced">
-            <Text style={{ color: colors.textMuted, fontSize: 13 }}>
-              {formatLastSynced(lastSyncedAt)}
-            </Text>
-          </Row>
-          <Pressable
+          <Chunky
             onPress={onSyncNow}
             disabled={syncBusy}
-            style={[
-              styles.bigBtn,
-              {
-                backgroundColor: 'transparent',
-                borderColor: colors.border,
-                borderWidth: StyleSheet.hairlineWidth,
-                flexDirection: 'row',
-                gap: 8,
-                opacity: syncBusy ? 0.6 : 1,
-              },
-            ]}
+            contentStyle={[styles.bigBtn, { flexDirection: 'row', gap: 8 }]}
           >
             {syncBusy ? (
               <ActivityIndicator size="small" color={colors.text} />
             ) : (
-              <Ionicons name="cloud-upload-outline" size={18} color={colors.text} />
+              <Ionicons name="cloud-upload-outline" size={20} color={colors.text} />
             )}
-            <Text style={{ color: colors.text }}>{syncBusy ? 'Syncing…' : 'Sync now'}</Text>
-          </Pressable>
-          <Text
-            style={{
-              color: colors.textMuted,
-              fontSize: 11,
-              paddingHorizontal: 14,
-              paddingBottom: 12,
-              lineHeight: 16,
-            }}
-          >
-            Stats records and your leaderboard name sync across devices via Firebase. Daily
-            scores submit automatically when you finish. Device-only settings (theme, sound,
-            haptics, hard mode) stay on this device.
-          </Text>
+            <Text style={[styles.bigBtnText, { color: colors.text }]}>
+              {syncBusy ? 'Syncing…' : 'Sync now'}
+            </Text>
+          </Chunky>
+          <Body style={[styles.note, { color: colors.textMuted }]}>
+            Stats records and your leaderboard name sync across devices via Firebase. Device-only
+            settings (theme, sound, haptics, hard mode) stay on this device.
+          </Body>
         </Section>
 
-        <Section title="Purchases">
+        <Card color={colors.sudoku} radius={24} depth={5} style={styles.adsCard}>
           {adsRemoved ? (
-            <Text style={{ color: colors.accent, paddingVertical: 8 }}>
-              Ads removed — thanks for the support.
-            </Text>
+            <>
+              <Display style={{ fontSize: 22, color: '#FFFFFF' }}>Ads removed</Display>
+              <Body style={{ color: '#FFFFFF' }}>Thanks for the support!</Body>
+            </>
           ) : (
-            <Pressable
-              disabled={purchasing}
-              onPress={async () => {
-                const r = await purchaseRemoveAds();
-                if (r.ok) {
-                  Alert.alert('Thank you!', 'Ads have been removed.');
-                } else if (!r.cancelled) {
-                  Alert.alert('Purchase failed', r.error ?? 'Please try again.');
-                }
-              }}
-              style={[
-                styles.bigBtn,
-                { backgroundColor: colors.accent, opacity: purchasing ? 0.6 : 1 },
-              ]}
-            >
-              {purchasing ? (
-                <ActivityIndicator color="#fff" />
-              ) : (
-                <Text style={{ color: '#fff', fontWeight: '700' }}>Remove ads · €2.99</Text>
-              )}
-            </Pressable>
+            <>
+              <Display style={{ fontSize: 22, color: '#FFFFFF' }}>Play without ads</Display>
+              <Body style={{ color: '#FFFFFF' }}>One purchase, every game, forever.</Body>
+              <Chunky
+                disabled={purchasing}
+                color={colors.wordle}
+                contentStyle={styles.bigBtn}
+                onPress={async () => {
+                  const r = await purchaseRemoveAds();
+                  if (r.ok) {
+                    Alert.alert('Thank you!', 'Ads have been removed.');
+                  } else if (!r.cancelled) {
+                    Alert.alert('Purchase failed', r.error ?? 'Please try again.');
+                  }
+                }}
+              >
+                {purchasing ? (
+                  <ActivityIndicator color={INK} />
+                ) : (
+                  <Text style={[styles.bigBtnText, { color: INK }]}>Remove ads · €2.99</Text>
+                )}
+              </Chunky>
+            </>
           )}
           <Pressable
             disabled={restoring}
+            accessibilityRole="button"
             onPress={async () => {
               const r = await restorePurchases();
               if (!r.ok) {
@@ -310,52 +309,31 @@ export function SettingsScreen() {
             }}
             style={[styles.linkRow, { opacity: restoring ? 0.5 : 1 }]}
           >
-            <Text style={{ color: colors.textMuted }}>
-              {restoring ? 'Restoring…' : 'Restore purchases'}
-            </Text>
+            <Text style={styles.restoreText}>{restoring ? 'Restoring…' : 'Restore purchases'}</Text>
           </Pressable>
+        </Card>
+
+        <Section title="Data">
+          <Group>
+            <LinkRow label="Clear statistics" onPress={clearStats} />
+            <LinkRow label="Clear all data" danger onPress={clearProgress} />
+          </Group>
         </Section>
 
-        <Section title="Data" danger>
-          <Pressable
-            onPress={clearStats}
-            style={[
-              styles.bigBtn,
-              {
-                backgroundColor: 'transparent',
-                borderColor: colors.border,
-                borderWidth: StyleSheet.hairlineWidth,
-              },
-            ]}
-          >
-            <Text style={{ color: colors.text }}>Clear statistics</Text>
-          </Pressable>
-          <Pressable
-            onPress={clearProgress}
-            style={[
-              styles.bigBtn,
-              {
-                backgroundColor: 'transparent',
-                borderColor: colors.error,
-                borderWidth: StyleSheet.hairlineWidth,
-              },
-            ]}
-          >
-            <Text style={{ color: colors.error }}>Clear all data</Text>
-          </Pressable>
-        </Section>
-
-        <Text style={[styles.version, { color: colors.textMuted }]}>Puzzaro · v0.1.0</Text>
+        <Body style={[styles.version, { color: colors.textMuted }]}>Puzzaro · v0.1.0</Body>
       </ScrollView>
+      <TabBar active="Settings" />
     </SafeAreaView>
   );
 }
 
+const INK = '#1D1A33';
+
 function formatLastSynced(ms: number | null): string {
-  if (!ms) return 'Never';
+  if (!ms) return 'Not synced';
   const delta = Date.now() - ms;
   const sec = Math.floor(delta / 1000);
-  if (sec < 60) return 'Just now';
+  if (sec < 60) return 'Synced';
   const min = Math.floor(sec / 60);
   if (min < 60) return `${min}m ago`;
   const hr = Math.floor(min / 60);
@@ -364,35 +342,41 @@ function formatLastSynced(ms: number | null): string {
   return `${days}d ago`;
 }
 
-function Section({
-  title,
-  children,
-}: {
-  title: string;
-  children: React.ReactNode;
-  danger?: boolean;
-}) {
-  const { colors } = useTheme();
+function Section({ title, children }: { title: string; children: React.ReactNode }) {
   return (
     <View style={styles.section}>
-      <Text style={[styles.sectionTitle, { color: colors.textMuted }]}>{title}</Text>
-      <View
-        style={[
-          styles.sectionBody,
-          { backgroundColor: colors.surface, borderColor: colors.border },
-        ]}
-      >
-        {children}
-      </View>
+      <Eyebrow style={{ paddingHorizontal: 4 }}>{title}</Eyebrow>
+      {children}
     </View>
   );
 }
 
-function Row({ label, children }: { label: string; children: React.ReactNode }) {
+// Groups rows into one outlined card with dividers between them.
+function Group({ children }: { children: React.ReactNode }) {
+  const { colors } = useTheme();
+  const items = React.Children.toArray(children).filter(Boolean);
+  return (
+    <Card depth={0} radius={20} style={{ overflow: 'hidden' }}>
+      {items.map((child, i) => (
+        <View
+          key={i}
+          style={i > 0 ? { borderTopWidth: 2, borderTopColor: colors.surfaceAlt } : undefined}
+        >
+          {child}
+        </View>
+      ))}
+    </Card>
+  );
+}
+
+function Row({ label, sub, children }: { label: string; sub?: string; children: React.ReactNode }) {
   const { colors } = useTheme();
   return (
     <View style={styles.row}>
-      <Text style={{ color: colors.text, flex: 1 }}>{label}</Text>
+      <View style={{ flex: 1 }}>
+        <Body style={{ fontFamily: fonts.bodyHeavy, fontSize: 16 }}>{label}</Body>
+        {sub ? <Body style={{ fontSize: 13, color: colors.textMuted }}>{sub}</Body> : null}
+      </View>
       {children}
     </View>
   );
@@ -400,17 +384,38 @@ function Row({ label, children }: { label: string; children: React.ReactNode }) 
 
 function SwitchRow({
   label,
+  sub,
   value,
   onChange,
 }: {
   label: string;
+  sub?: string;
   value: boolean;
   onChange: (v: boolean) => void;
 }) {
   return (
-    <Row label={label}>
-      <Switch value={value} onValueChange={onChange} />
+    <Row label={label} sub={sub}>
+      <Toggle value={value} onChange={onChange} label={label} />
     </Row>
+  );
+}
+
+function LinkRow({
+  label,
+  onPress,
+  danger,
+}: {
+  label: string;
+  onPress: () => void;
+  danger?: boolean;
+}) {
+  const { colors } = useTheme();
+  const color = danger ? colors.error : colors.text;
+  return (
+    <Pressable onPress={onPress} accessibilityRole="button" style={styles.row}>
+      <Body style={{ flex: 1, fontFamily: fonts.bodyHeavy, fontSize: 16, color }}>{label}</Body>
+      <Ionicons name="chevron-forward" size={18} color={color} />
+    </Pressable>
   );
 }
 
@@ -428,52 +433,64 @@ function TimeStepper({
     const total = (((h * 60 + m) % (24 * 60)) + 24 * 60) % (24 * 60);
     onChange(Math.floor(total / 60), total % 60);
   };
-  const Step = ({ icon, onPress }: { icon: 'remove' | 'add'; onPress: () => void }) => (
-    <Pressable
+  const Step = ({
+    icon,
+    label,
+    onPress,
+  }: {
+    icon: 'remove' | 'add';
+    label: string;
+    onPress: () => void;
+  }) => (
+    <Chunky
       onPress={onPress}
-      style={{
-        padding: 6,
-        borderRadius: 6,
-        borderWidth: StyleSheet.hairlineWidth,
-        borderColor: colors.border,
-      }}
+      accessibilityLabel={label}
+      depth={2}
+      radius={10}
+      contentStyle={styles.step}
     >
-      <Ionicons name={icon} size={14} color={colors.text} />
-    </Pressable>
+      <Ionicons name={icon} size={16} color={colors.text} />
+    </Chunky>
   );
   return (
-    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
-      <Step icon="remove" onPress={() => adjust(hour - 1, minute)} />
-      <Text style={[styles.timeValue, { color: colors.text, minWidth: 24, textAlign: 'center' }]}>
-        {hour.toString().padStart(2, '0')}
-      </Text>
-      <Step icon="add" onPress={() => adjust(hour + 1, minute)} />
-      <Text style={{ color: colors.textMuted, marginHorizontal: 2 }}>:</Text>
-      <Step icon="remove" onPress={() => adjust(hour, minute - 15)} />
-      <Text style={[styles.timeValue, { color: colors.text, minWidth: 24, textAlign: 'center' }]}>
-        {minute.toString().padStart(2, '0')}
-      </Text>
-      <Step icon="add" onPress={() => adjust(hour, minute + 15)} />
+    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 5 }}>
+      <Step icon="remove" label="Hour earlier" onPress={() => adjust(hour - 1, minute)} />
+      <Display style={styles.timeValue}>{hour.toString().padStart(2, '0')}</Display>
+      <Step icon="add" label="Hour later" onPress={() => adjust(hour + 1, minute)} />
+      <Display style={{ fontSize: 18 }}>:</Display>
+      <Step icon="remove" label="15 minutes earlier" onPress={() => adjust(hour, minute - 15)} />
+      <Display style={styles.timeValue}>{minute.toString().padStart(2, '0')}</Display>
+      <Step icon="add" label="15 minutes later" onPress={() => adjust(hour, minute + 15)} />
     </View>
   );
 }
 
 const styles = StyleSheet.create({
   container: { flex: 1 },
-  scroll: { padding: 16, gap: 18 },
-  title: { fontSize: 28, fontWeight: '800' },
-  section: { gap: 6 },
-  sectionTitle: {
-    fontSize: 12,
-    letterSpacing: 0.6,
-    textTransform: 'uppercase',
-    paddingHorizontal: 4,
+  scroll: { padding: 16, paddingTop: 12, gap: 18 },
+  profile: { flexDirection: 'row', alignItems: 'center', gap: 14, padding: 14 },
+  avatar: {
+    width: 52,
+    height: 52,
+    borderRadius: 16,
+    borderWidth: OUTLINE,
+    alignItems: 'center',
+    justifyContent: 'center',
+    transform: [{ rotate: '-6deg' }],
   },
-  sectionBody: {
-    borderRadius: 12,
-    borderWidth: StyleSheet.hairlineWidth,
-    overflow: 'hidden',
+  avatarText: { fontFamily: fonts.display, fontSize: 24, color: INK },
+  nameInput: { fontFamily: fonts.displaySemi, fontSize: 20, paddingVertical: 2 },
+  syncPill: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    paddingHorizontal: 9,
+    paddingVertical: 4,
+    borderRadius: 999,
+    borderWidth: OUTLINE,
   },
+  syncPillText: { fontFamily: fonts.bodyHeavy, fontSize: 11 },
+  section: { gap: 8 },
   row: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -481,28 +498,18 @@ const styles = StyleSheet.create({
     paddingVertical: 12,
     gap: 12,
   },
-  segmented: { flexDirection: 'row', gap: 4 },
-  segment: {
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 6,
-    borderWidth: StyleSheet.hairlineWidth,
+  step: { width: 30, height: 30, alignItems: 'center', justifyContent: 'center' },
+  timeValue: { fontSize: 18, minWidth: 24, textAlign: 'center', fontVariant: ['tabular-nums'] },
+  bigBtn: { height: 52, alignItems: 'center', justifyContent: 'center' },
+  bigBtnText: { fontFamily: fonts.displaySemi, fontSize: 18 },
+  note: { fontSize: 12, lineHeight: 17, paddingHorizontal: 4 },
+  adsCard: { padding: 18, gap: 10 },
+  linkRow: { alignItems: 'center', paddingVertical: 8 },
+  restoreText: {
+    fontFamily: fonts.bodyHeavy,
+    fontSize: 14,
+    color: '#FFFFFF',
+    textDecorationLine: 'underline',
   },
-  timeValue: { fontSize: 16, fontWeight: '600', fontVariant: ['tabular-nums'] },
-  input: {
-    minWidth: 120,
-    paddingHorizontal: 10,
-    paddingVertical: 6,
-    borderRadius: 6,
-    borderWidth: StyleSheet.hairlineWidth,
-  },
-  bigBtn: {
-    margin: 12,
-    paddingVertical: 12,
-    paddingHorizontal: 16,
-    borderRadius: 8,
-    alignItems: 'center',
-  },
-  linkRow: { alignItems: 'center', paddingVertical: 10 },
-  version: { textAlign: 'center', fontSize: 12, marginTop: 12 },
+  version: { textAlign: 'center', fontSize: 12, marginTop: 4 },
 });

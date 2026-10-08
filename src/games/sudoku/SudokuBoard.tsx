@@ -1,6 +1,7 @@
 import React from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { useTheme } from '@/theme/ThemeProvider';
+import { fonts } from '@/theme/fonts';
 import type { Board } from './types';
 
 export type NotesBoard = ReadonlyArray<ReadonlySet<number>>;
@@ -15,6 +16,12 @@ interface Props {
   onSelect: (index: number) => void;
 }
 
+const BOX_GAP = 4;
+const CELL_GAP = 1.5;
+const RADIUS = 16;
+
+// The board is drawn as nine 3x3 boxes sitting in an ink frame, so the thick
+// box separators are just the gaps between boxes.
 export function SudokuBoard({ board, given, notes, selected, wrong, hidden, onSelect }: Props) {
   const { colors } = useTheme();
   const selectedVal = selected != null ? board[selected] : 0;
@@ -22,71 +29,81 @@ export function SudokuBoard({ board, given, notes, selected, wrong, hidden, onSe
   const selCol = selected != null ? selected % 9 : -1;
   const selBox = selected != null ? Math.floor(selRow / 3) * 3 + Math.floor(selCol / 3) : -1;
 
+  const renderCell = (r: number, c: number) => {
+    const i = r * 9 + c;
+    const val = board[i];
+    const isGiven = given[i] !== 0;
+    const isSelected = selected === i;
+    const inPeer =
+      !isSelected &&
+      (r === selRow || c === selCol || Math.floor(r / 3) * 3 + Math.floor(c / 3) === selBox);
+    const sameNumber = !isSelected && val !== 0 && val === selectedVal;
+    const isWrong = wrong.has(i);
+
+    let bg = colors.given;
+    if (inPeer) bg = colors.highlight;
+    if (sameNumber) bg = colors.sameNumber;
+    if (isWrong) bg = colors.wrongCell;
+    if (isSelected) bg = colors.selection;
+
+    const cellNotes = notes[i];
+    const showNotes = val === 0 && cellNotes.size > 0;
+
+    return (
+      <Pressable
+        key={c}
+        onPress={() => onSelect(i)}
+        accessibilityLabel={`Row ${r + 1} column ${c + 1}, ${val || 'empty'}`}
+        style={[styles.cell, { backgroundColor: bg }]}
+      >
+        {hidden ? null : val !== 0 ? (
+          <Text
+            allowFontScaling={false}
+            style={{
+              fontFamily: isGiven ? fonts.display : fonts.displaySemi,
+              fontSize: 22,
+              color: isWrong ? colors.error : isGiven ? colors.text : colors.accent,
+            }}
+          >
+            {val}
+          </Text>
+        ) : showNotes ? (
+          <View style={styles.notesGrid}>
+            {[1, 2, 3, 4, 5, 6, 7, 8, 9].map(n => (
+              <View key={n} style={styles.noteCell}>
+                <Text
+                  allowFontScaling={false}
+                  style={[styles.noteText, { color: colors.textMuted }]}
+                >
+                  {cellNotes.has(n) ? n : ''}
+                </Text>
+              </View>
+            ))}
+          </View>
+        ) : null}
+      </Pressable>
+    );
+  };
+
   return (
-    <View style={[styles.board, { borderColor: colors.text }]}>
-      {Array.from({ length: 9 }).map((_, r) => (
-        <View key={r} style={styles.row}>
-          {Array.from({ length: 9 }).map((__, c) => {
-            const i = r * 9 + c;
-            const val = board[i];
-            const isGiven = given[i] !== 0;
-            const isSelected = selected === i;
-            const inPeer =
-              !isSelected &&
-              (r === selRow ||
-                c === selCol ||
-                Math.floor(r / 3) * 3 + Math.floor(c / 3) === selBox);
-            const sameNumber = !isSelected && val !== 0 && val === selectedVal;
-            const isWrong = wrong.has(i);
-
-            let bg = colors.surface;
-            if (isGiven) bg = colors.given;
-            if (inPeer) bg = colors.highlight;
-            if (sameNumber) bg = colors.sameNumber;
-            if (isSelected) bg = colors.selection;
-
-            const borderRight = (c + 1) % 3 === 0 && c !== 8 ? 2 : StyleSheet.hairlineWidth;
-            const borderBottom = (r + 1) % 3 === 0 && r !== 8 ? 2 : StyleSheet.hairlineWidth;
-
-            const cellNotes = notes[i];
-            const showNotes = val === 0 && cellNotes.size > 0;
-
+    <View style={[styles.board, { backgroundColor: colors.ink }]}>
+      {[0, 1, 2].map(br => (
+        <View key={br} style={styles.band}>
+          {[0, 1, 2].map(bc => {
+            const corner = {
+              borderTopLeftRadius: br === 0 && bc === 0 ? RADIUS - 5 : 0,
+              borderTopRightRadius: br === 0 && bc === 2 ? RADIUS - 5 : 0,
+              borderBottomLeftRadius: br === 2 && bc === 0 ? RADIUS - 5 : 0,
+              borderBottomRightRadius: br === 2 && bc === 2 ? RADIUS - 5 : 0,
+            };
             return (
-              <Pressable
-                key={c}
-                onPress={() => onSelect(i)}
-                style={[
-                  styles.cell,
-                  {
-                    backgroundColor: bg,
-                    borderRightWidth: borderRight,
-                    borderBottomWidth: borderBottom,
-                    borderColor: colors.border,
-                  },
-                ]}
-              >
-                {hidden ? null : val !== 0 ? (
-                  <Text
-                    style={{
-                      fontSize: 22,
-                      fontWeight: isGiven ? '700' : '500',
-                      color: isWrong ? colors.error : isGiven ? colors.text : colors.accent,
-                    }}
-                  >
-                    {val}
-                  </Text>
-                ) : showNotes ? (
-                  <View style={styles.notesGrid}>
-                    {[1, 2, 3, 4, 5, 6, 7, 8, 9].map(n => (
-                      <View key={n} style={styles.noteCell}>
-                        <Text style={[styles.noteText, { color: colors.textMuted }]}>
-                          {cellNotes.has(n) ? n : ''}
-                        </Text>
-                      </View>
-                    ))}
+              <View key={bc} style={[styles.box, corner, { backgroundColor: colors.gridLine }]}>
+                {[0, 1, 2].map(k => (
+                  <View key={k} style={styles.boxRow}>
+                    {[0, 1, 2].map(m => renderCell(br * 3 + k, bc * 3 + m))}
                   </View>
-                ) : null}
-              </Pressable>
+                ))}
+              </View>
             );
           })}
         </View>
@@ -98,21 +115,22 @@ export function SudokuBoard({ board, given, notes, selected, wrong, hidden, onSe
 const styles = StyleSheet.create({
   board: {
     aspectRatio: 1,
-    borderWidth: 2,
     alignSelf: 'stretch',
+    padding: BOX_GAP,
+    paddingBottom: BOX_GAP + 4,
+    gap: BOX_GAP,
+    borderRadius: RADIUS,
   },
-  row: { flexDirection: 'row', flex: 1 },
-  cell: {
-    flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-    padding: 2,
-  },
+  band: { flex: 1, flexDirection: 'row', gap: BOX_GAP },
+  box: { flex: 1, gap: CELL_GAP, overflow: 'hidden' },
+  boxRow: { flex: 1, flexDirection: 'row', gap: CELL_GAP },
+  cell: { flex: 1, alignItems: 'center', justifyContent: 'center' },
   notesGrid: {
     flex: 1,
     width: '100%',
     flexDirection: 'row',
     flexWrap: 'wrap',
+    padding: 1,
   },
   noteCell: {
     width: '33.33%',
@@ -120,8 +138,5 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  noteText: {
-    fontSize: 9,
-    fontWeight: '500',
-  },
+  noteText: { fontFamily: fonts.bodyHeavy, fontSize: 9 },
 });

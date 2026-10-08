@@ -1,17 +1,19 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
-import {
-  ActivityIndicator,
-  Alert,
-  Platform,
-  Pressable,
-  ScrollView,
-  StyleSheet,
-  Text,
-  View,
-} from 'react-native';
+import { ActivityIndicator, Alert, ScrollView, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '@/theme/ThemeProvider';
+import { fonts } from '@/theme/fonts';
+import {
+  Body,
+  Card,
+  Chunky,
+  Display,
+  formatClock,
+  IconButton,
+  ScreenHeader,
+  ToolButton,
+} from '@/ui/kit';
 import { SudokuBoard } from '@/games/sudoku/SudokuBoard';
 import { DifficultyPicker } from '@/games/sudoku/DifficultyPicker';
 import { dailyPuzzle, randomPuzzle } from '@/games/sudoku/generator';
@@ -409,14 +411,30 @@ export function SudokuScreen({ mode: navMode }: Props) {
         ]}
       >
         <ActivityIndicator size="large" color={colors.accent} />
-        <Text style={{ color: colors.textMuted, marginTop: 12 }}>Generating puzzle…</Text>
+        <Body style={{ color: colors.textMuted, marginTop: 12 }}>Generating puzzle…</Body>
       </SafeAreaView>
     );
   }
 
+  const difficultyLabel = state.difficulty[0].toUpperCase() + state.difficulty.slice(1);
+  const remainingOf = (n: number) =>
+    9 - state.board.filter((v, i) => v === n && v === state.solution[i]).length;
+
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
-      <ScrollView contentContainerStyle={styles.scroll}>
+      <ScrollView contentContainerStyle={styles.scroll} showsVerticalScrollIndicator={false}>
+        <ScreenHeader
+          title={navMode.kind === 'daily' ? 'Daily Sudoku' : 'Sudoku'}
+          subtitle={difficultyLabel}
+          right={
+            <IconButton
+              icon={state.paused ? 'play' : 'pause'}
+              label={state.paused ? 'Resume' : 'Pause'}
+              onPress={togglePause}
+            />
+          }
+        />
+
         {navMode.kind === 'random' && (
           <DifficultyPicker
             value={state.difficulty}
@@ -427,38 +445,25 @@ export function SudokuScreen({ mode: navMode }: Props) {
           />
         )}
 
-        <View style={styles.statsRow}>
-          <View style={styles.stat}>
-            <Text style={[styles.statLabel, { color: colors.textMuted }]}>Mistakes</Text>
-            <Text
-              style={[
-                styles.statValue,
-                { color: state.mistakes >= MAX_MISTAKES ? colors.error : colors.text },
-              ]}
-            >
-              {state.mistakes}/{MAX_MISTAKES}
-            </Text>
+        <Card depth={0} radius={16} style={styles.statsRow}>
+          <View
+            style={styles.hearts}
+            accessibilityLabel={`${MAX_MISTAKES - state.mistakes} lives left`}
+          >
+            {Array.from({ length: MAX_MISTAKES }).map((_, h) => (
+              <Ionicons
+                key={h}
+                name={h < MAX_MISTAKES - state.mistakes ? 'heart' : 'heart-outline'}
+                size={22}
+                color={h < MAX_MISTAKES - state.mistakes ? colors.pink : colors.textMuted}
+              />
+            ))}
           </View>
-          <View style={styles.stat}>
-            <Text style={[styles.statLabel, { color: colors.textMuted }]}>Score</Text>
-            <Text style={[styles.statValue, { color: colors.text }]}>{state.score}</Text>
-          </View>
-          <View style={styles.stat}>
-            <Text style={[styles.statLabel, { color: colors.textMuted }]}>Time</Text>
-            <View style={styles.timeRow}>
-              <Text style={[styles.statValue, { color: colors.text }]}>
-                {formatTime(state.elapsedMs)}
-              </Text>
-              <Pressable onPress={togglePause} hitSlop={8}>
-                <Ionicons
-                  name={state.paused ? 'play' : 'pause'}
-                  size={18}
-                  color={colors.textMuted}
-                />
-              </Pressable>
-            </View>
-          </View>
-        </View>
+          <Display style={styles.clock}>{formatClock(state.elapsedMs)}</Display>
+          <Body style={{ fontFamily: fonts.bodyHeavy, fontSize: 13, color: colors.textMuted }}>
+            {state.score} pts
+          </Body>
+        </Card>
 
         <View>
           <SudokuBoard
@@ -474,62 +479,90 @@ export function SudokuScreen({ mode: navMode }: Props) {
             }}
           />
           {state.paused && (
-            <Pressable
-              onPress={togglePause}
-              style={[styles.pauseOverlay, { backgroundColor: colors.surface }]}
-            >
-              <Ionicons name="play" size={48} color={colors.accent} />
-              <Text style={{ color: colors.textMuted, marginTop: 8 }}>Tap to resume</Text>
-            </Pressable>
+            <View style={styles.pauseOverlay}>
+              <Card style={styles.pauseCard} depth={5}>
+                <Display style={{ fontSize: 30 }}>Paused</Display>
+                <Body style={{ color: colors.textMuted }}>
+                  Timer stopped at {formatClock(state.elapsedMs)}
+                </Body>
+                <Chunky
+                  onPress={togglePause}
+                  color={colors.sudoku}
+                  style={{ alignSelf: 'stretch' }}
+                  contentStyle={styles.bigBtn}
+                >
+                  <Display
+                    style={{ fontFamily: fonts.displaySemi, fontSize: 20, color: '#FFFFFF' }}
+                  >
+                    Resume
+                  </Display>
+                </Chunky>
+              </Card>
+            </View>
           )}
         </View>
 
         <View style={styles.actionRow}>
-          <ActionButton
+          <ToolButton
             icon="arrow-undo"
             label="Undo"
             disabled={history.length === 0 || state.outcome !== 'playing'}
             onPress={undo}
           />
-          <ActionButton icon="backspace-outline" label="Erase" onPress={erase} />
-          <ActionButton
+          <ToolButton icon="backspace-outline" label="Erase" onPress={erase} />
+          <ToolButton
             icon="pencil"
-            label={`Notes ${notesMode ? 'ON' : 'OFF'}`}
+            label="Notes"
             active={notesMode}
+            badge={notesMode ? 'ON' : 'OFF'}
+            badgeColor={colors.wordle}
             onPress={() => setNotesMode(m => !m)}
           />
-          <ActionButton
+          <ToolButton
             icon="bulb-outline"
             label="Hint"
             badge={state.hintsLeft}
             disabled={state.hintsLeft === 0}
             onPress={useHint}
           />
-          <ActionButton icon="sparkles-outline" label="Auto" onPress={fillAutoPencil} />
+          <ToolButton icon="sparkles-outline" label="Auto" onPress={fillAutoPencil} />
         </View>
 
         <View style={styles.pad}>
-          {[1, 2, 3, 4, 5, 6, 7, 8, 9].map(n => (
-            <Pressable
-              key={n}
-              onPress={() => inputNumber(n)}
-              style={[
-                styles.padKey,
-                { backgroundColor: colors.surfaceAlt, borderColor: colors.border },
-              ]}
-            >
-              <Text style={{ color: colors.accent, fontSize: 28, fontWeight: '600' }}>{n}</Text>
-            </Pressable>
-          ))}
+          {[1, 2, 3, 4, 5, 6, 7, 8, 9].map(n => {
+            const left = remainingOf(n);
+            return (
+              <Chunky
+                key={n}
+                onPress={() => inputNumber(n)}
+                disabled={left <= 0}
+                accessibilityLabel={`Enter ${n}`}
+                depth={3}
+                radius={12}
+                color={notesMode ? colors.surfaceAlt : colors.surface}
+                style={{ flex: 1 }}
+                contentStyle={styles.padKey}
+              >
+                <Display
+                  allowFontScaling={false}
+                  style={{ fontFamily: fonts.displaySemi, fontSize: 26, lineHeight: 30 }}
+                >
+                  {n}
+                </Display>
+                <Body allowFontScaling={false} style={{ fontSize: 10, color: colors.textMuted }}>
+                  {left > 0 ? left : ''}
+                </Body>
+              </Chunky>
+            );
+          })}
         </View>
 
         {navMode.kind === 'random' && (
-          <Pressable
-            onPress={promptNewGame}
-            style={[styles.newGameBtn, { backgroundColor: colors.accent }]}
-          >
-            <Text style={{ color: '#fff', fontSize: 16, fontWeight: '700' }}>New Game</Text>
-          </Pressable>
+          <Chunky onPress={promptNewGame} color={colors.sudoku} contentStyle={styles.bigBtn}>
+            <Display style={{ fontFamily: fonts.displaySemi, fontSize: 18, color: '#FFFFFF' }}>
+              New game
+            </Display>
+          </Chunky>
         )}
       </ScrollView>
       <AdBanner />
@@ -569,13 +602,14 @@ export function SudokuScreen({ mode: navMode }: Props) {
       <ResultModal
         visible={resultVisible}
         won={state.outcome === 'won'}
-        title={state.outcome === 'won' ? 'Solved!' : 'Game over'}
+        accent={colors.sudoku}
+        title={state.outcome === 'won' ? 'Solved!' : 'Out of hearts'}
         subtitle={
           state.outcome === 'won'
             ? navMode.kind === 'daily'
               ? "You finished today's daily Sudoku"
-              : `Difficulty: ${state.difficulty[0].toUpperCase() + state.difficulty.slice(1)}`
-            : `You made ${MAX_MISTAKES} mistakes`
+              : `Difficulty: ${difficultyLabel}`
+            : `You made ${MAX_MISTAKES} mistakes — give it another go`
         }
         stats={[
           { label: 'Time', value: formatTime(state.elapsedMs) },
@@ -610,103 +644,27 @@ export function SudokuScreen({ mode: navMode }: Props) {
   );
 }
 
-interface ActionButtonProps {
-  icon: keyof typeof Ionicons.glyphMap;
-  label: string;
-  onPress: () => void;
-  active?: boolean;
-  disabled?: boolean;
-  badge?: number;
-}
-
-function ActionButton({ icon, label, onPress, active, disabled, badge }: ActionButtonProps) {
-  const { colors } = useTheme();
-  return (
-    <Pressable
-      onPress={onPress}
-      disabled={disabled}
-      style={[
-        styles.actionBtn,
-        {
-          backgroundColor: active ? colors.accent : colors.surfaceAlt,
-          borderColor: colors.border,
-          opacity: disabled ? 0.4 : 1,
-        },
-      ]}
-    >
-      <Ionicons name={icon} size={22} color={active ? '#fff' : colors.text} />
-      <Text
-        style={{
-          fontSize: 10,
-          marginTop: 2,
-          color: active ? '#fff' : colors.textMuted,
-        }}
-      >
-        {label}
-      </Text>
-      {badge != null && (
-        <View style={[styles.badge, { backgroundColor: colors.accent }]}>
-          <Text style={styles.badgeText}>{badge}</Text>
-        </View>
-      )}
-    </Pressable>
-  );
-}
-
 const styles = StyleSheet.create({
   container: { flex: 1 },
-  scroll: { padding: 16, gap: 14 },
-  statsRow: { flexDirection: 'row', justifyContent: 'space-between' },
-  stat: { alignItems: 'flex-start' },
-  statLabel: { fontSize: 12 },
-  statValue: { fontSize: 18, fontWeight: '700', fontVariant: ['tabular-nums'] },
-  timeRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
+  scroll: { padding: 16, paddingTop: 8, gap: 14 },
+  statsRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingHorizontal: 14,
+    paddingVertical: 8,
+  },
+  hearts: { flexDirection: 'row', gap: 2 },
+  clock: { fontFamily: fonts.displaySemi, fontSize: 20, fontVariant: ['tabular-nums'] },
   pauseOverlay: {
     ...StyleSheet.absoluteFillObject,
     alignItems: 'center',
     justifyContent: 'center',
-    borderRadius: 4,
+    padding: 20,
   },
-  actionRow: { flexDirection: 'row', gap: 6 },
-  actionBtn: {
-    flex: 1,
-    height: 56,
-    borderRadius: 12,
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderWidth: StyleSheet.hairlineWidth,
-    position: 'relative',
-    minWidth: 0,
-  },
-  badge: {
-    position: 'absolute',
-    top: -4,
-    right: -4,
-    minWidth: 18,
-    height: 18,
-    paddingHorizontal: 4,
-    borderRadius: 9,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  badgeText: { color: '#fff', fontSize: 11, fontWeight: '700' },
-  pad: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    justifyContent: 'center',
-    gap: 8,
-  },
-  padKey: {
-    width: '30%',
-    aspectRatio: 1.6,
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderRadius: 10,
-    borderWidth: StyleSheet.hairlineWidth,
-  },
-  newGameBtn: {
-    paddingVertical: 14,
-    borderRadius: 12,
-    alignItems: 'center',
-  },
+  pauseCard: { alignSelf: 'stretch', alignItems: 'center', gap: 12, padding: 22 },
+  actionRow: { flexDirection: 'row', gap: 8, marginTop: 6 },
+  pad: { flexDirection: 'row', gap: 5 },
+  padKey: { height: 60, alignItems: 'center', justifyContent: 'center' },
+  bigBtn: { height: 52, alignItems: 'center', justifyContent: 'center' },
 });
