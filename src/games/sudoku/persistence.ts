@@ -1,5 +1,5 @@
-import { getJSON, remove, setJSON } from '@/storage/storage';
-import { todayISO } from '@/leaderboard/leaderboard';
+import { createGameRepository } from '@/storage/repository';
+import type { PlayMode } from '@/core/game';
 import type { Difficulty } from './types';
 
 export type SudokuOutcome = 'playing' | 'won' | 'lost';
@@ -23,20 +23,9 @@ export interface SudokuPersistedState {
   outcome: SudokuOutcome;
 }
 
-export type SudokuMode = { kind: 'random' } | { kind: 'daily' };
+export type SudokuMode = PlayMode;
 
-function key(mode: SudokuMode): string {
-  return mode.kind === 'daily' ? `sudoku.state.daily.${todayISO()}` : 'sudoku.state.practice';
-}
-
-export async function loadSudoku(mode: SudokuMode): Promise<SudokuPersistedState | null> {
-  return getJSON<SudokuPersistedState>(key(mode));
-}
-
-export async function saveSudoku(mode: SudokuMode, state: SudokuPersistedState): Promise<void> {
-  await setJSON(key(mode), state);
-}
-
-export async function clearSudoku(mode: SudokuMode): Promise<void> {
-  await remove(key(mode));
-}
+export const sudokuRepository = createGameRepository<SudokuPersistedState>({
+  dailyKey: date => `sudoku.state.daily.${date}`,
+  practiceKey: 'sudoku.state.practice',
+});

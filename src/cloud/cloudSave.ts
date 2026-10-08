@@ -1,15 +1,15 @@
 import { getJSON, setJSON } from '@/storage/storage';
-import type { FinishRecord } from '@/stats/stats';
-import { pullCloudSave, pushCloudSave } from './firebase';
+import { syncedDataChanged } from '@/core/events';
+import { getRecords, saveRecords, type FinishRecord } from '@/stats/stats';
+import { leaderboardScoreSubmitted } from '@/leaderboard/leaderboard';
+import {
+  cloudSyncedSubset,
+  loadPreferences,
+  type RemotePreferencesSource,
+} from '@/prefs/prefsStore';
+import { pullCloudSave, pushCloudSave, submitLeaderboardScore } from './firebase';
 
-const RECORDS_KEY = 'stats.records.v1';
-const PREFS_KEY = 'preferences.v1';
 const LAST_SYNCED_KEY = 'cloud.lastSyncedAt';
-
-interface LocalPrefsShape {
-  playerName?: string;
-  onboardingSeen?: Record<string, boolean>;
-}
 
 // Composite key for record dedupe. Two records that share the exact same
 // game/mode/date/outcome/timeMs/score/difficulty/guesses are treated as the
@@ -52,12 +52,12 @@ export interface PullResult {
 // to other local state (preferences).
 export async function pullAndMerge(): Promise<PullResult | null> {
   const cloud = await pullCloudSave();
-  const local = (await getJSON<FinishRecord[]>(RECORDS_KEY)) ?? [];
+  const local = await getRecords();
   if (!cloud) {
     return { merged: local, cloudPlayerName: null, cloudOnboardingSeen: null };
   }
   const merged = mergeRecords(local, cloud.statsRecords ?? []);
-  await setJSON(RECORDS_KEY, merged);
+  await saveRecords(merged);
   await setJSON(LAST_SYNCED_KEY, Date.now());
   return {
     merged,
@@ -69,13 +69,9 @@ export async function pullAndMerge(): Promise<PullResult | null> {
 // Push the current local snapshot (records + cloud-synced prefs subset) to
 // Firestore. Reads from AsyncStorage so callers don't have to thread state.
 export async function pushCloudSnapshot(): Promise<void> {
-  const records = (await getJSON<FinishRecord[]>(RECORDS_KEY)) ?? [];
-  const prefs = (await getJSON<LocalPrefsShape>(PREFS_KEY)) ?? {};
-  await pushCloudSave({
-    statsRecords: records,
-    playerName: prefs.playerName,
-    onboardingSeen: prefs.onboardingSeen,
-  });
+  const records = await getRecords();
+  const prefs = cloudSyncedSubset(await loadPreferences());
+  await pushCloudSave({ statsRecords: records, ...prefs });
   await setJSON(LAST_SYNCED_KEY, Date.now());
 }
 
@@ -135,4 +131,34 @@ export async function fullSync(): Promise<SyncResult> {
   } catch (e: any) {
     return { ok: false, error: e?.message ?? String(e) };
   }
+}
+
+// Restores synced preferences from the cloud save; injected into
+// PreferencesProvider so preferences don't depend on Firebase.
+export const cloudPreferencesSource: RemotePreferencesSource = {
+  async pull() {
+    const result = await pullAndMerge();
+    if (!result) return null;
+    return {
+      playerName: result.cloudPlayerName ?? undefined,
+      onboardingSeen: result.cloudOnboardingSeen ?? undefined,
+    };
+  },
+};
+
+// Wires local data events to the cloud. Call once at app start; returns an
+// unsubscribe function.
+export function startCloudSync(): () => void {
+  const offData = syncedDataChanged.on(() => schedulePush());
+  const offScores = leaderboardScoreSubmitted.on(entry => {
+    if (!entry.game) return;
+    submitLeaderboardScore(entry.game, entry.date, {
+      name: entry.name,
+      timeMs: entry.timeMs,
+    }).catch(() => {});
+  });
+  return () => {
+    offData();
+    offScores();
+  };
 }

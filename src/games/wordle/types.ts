@@ -1,3 +1,5 @@
+import type { PlayMode } from '@/core/game';
+
 export type LetterState = 'empty' | 'pending' | 'correct' | 'present' | 'absent';
 
 export interface Guess {
@@ -5,7 +7,7 @@ export interface Guess {
   states: LetterState[]; // length 5
 }
 
-export type WordleMode = { kind: 'random' } | { kind: 'daily' };
+export type WordleMode = PlayMode;
 
 export interface WordleState {
   answer: string;

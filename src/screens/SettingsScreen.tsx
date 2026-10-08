@@ -4,7 +4,6 @@ import {
   Pressable,
   ScrollView,
   StyleSheet,
-  Switch,
   Text,
   TextInput,
   View,
@@ -15,14 +14,17 @@ import { fonts } from '@/theme/fonts';
 import { Body, Card, Chunky, Display, Eyebrow, OUTLINE, Segmented, TabBar, Toggle } from '@/ui/kit';
 import { useEntitlements } from '@/iap/EntitlementsProvider';
 import { usePreferences, type ThemeMode } from '@/prefs/PreferencesProvider';
-import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Ionicons } from '@expo/vector-icons';
 import {
   cancelDailyReminder,
   ensurePermission,
   scheduleDailyReminder,
 } from '@/notifications/dailyReminder';
-import { flushPush, fullSync, getLastSyncedAt, schedulePush } from '@/cloud/cloudSave';
+import { flushPush, fullSync, getLastSyncedAt } from '@/cloud/cloudSave';
+import { clearAll } from '@/storage/storage';
+import { clearRecords } from '@/stats/stats';
+import { clearLeaderboard } from '@/leaderboard/leaderboard';
+import { syncedDataChanged } from '@/core/events';
 import { ActivityIndicator } from 'react-native';
 
 export function SettingsScreen() {
@@ -76,10 +78,10 @@ export function SettingsScreen() {
           text: 'Clear',
           style: 'destructive',
           onPress: async () => {
-            await AsyncStorage.clear();
+            await clearAll();
             resetPrefs();
             // Tell the cloud the user's snapshot is now empty.
-            schedulePush(0);
+            syncedDataChanged.emit();
             Alert.alert('Cleared', 'All local data has been removed.');
           },
         },
@@ -97,7 +99,7 @@ export function SettingsScreen() {
           text: 'Clear',
           style: 'destructive',
           onPress: async () => {
-            await AsyncStorage.multiRemove(['stats.records.v1', 'sudoku.daily.leaderboard.v1']);
+            await Promise.all([clearRecords(), clearLeaderboard()]);
             // Push the empty record set so cloud reflects the wipe too.
             await flushPush().catch(() => {});
             setLastSyncedAt(await getLastSyncedAt());

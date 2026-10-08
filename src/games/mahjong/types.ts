@@ -1,3 +1,5 @@
+import type { PlayMode } from '@/core/game';
+
 export interface Position {
   x: number;
   y: number;
@@ -11,7 +13,7 @@ export interface Tile {
   glyph: string; // unicode mahjong character
 }
 
-export type MahjongMode = { kind: 'random' } | { kind: 'daily' };
+export type MahjongMode = PlayMode;
 
 export interface MahjongState {
   tiles: Tile[]; // all tiles

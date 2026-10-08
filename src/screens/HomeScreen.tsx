@@ -10,6 +10,8 @@ import { AdBanner } from '@/ads/AdBanner';
 import type { RootStackParamList } from '@/navigation/types';
 import { loadHomeStatus, type DailyStatus, type HomeStatus } from '@/home/homeStatus';
 import { DIFFICULTIES, type Difficulty } from '@/games/sudoku/types';
+import { GAME_CATALOG } from '@/games/catalog';
+import { capitalize } from '@/core/format';
 import { Body, Chunky, Display, Eyebrow, OUTLINE, Pill, TabBar } from '@/ui/kit';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'Home'>;
@@ -34,11 +36,10 @@ export function HomeScreen({ navigation }: Props) {
     }, [refresh]),
   );
 
-  const dailies = status ? [status.sudoku.daily, status.wordle.daily, status.mahjong.daily] : [];
-  const doneCount = dailies.filter(d => d.done).length;
-  const streak = status
-    ? Math.max(status.sudoku.streak, status.wordle.streak, status.mahjong.streak)
-    : 0;
+  const games = status ? Object.values(status) : [];
+  const doneCount = games.filter(g => g.daily.done).length;
+  const streak = Math.max(0, ...games.map(g => g.streak));
+  const total = GAME_CATALOG.length;
   const today = new Date().toLocaleDateString('en-US', {
     weekday: 'long',
     day: 'numeric',
@@ -69,11 +70,15 @@ export function HomeScreen({ navigation }: Props) {
         <View style={{ gap: 10 }}>
           <Body style={{ fontSize: 14, color: colors.textMuted }}>{today}</Body>
           <View style={styles.titleRow}>
-            <Display style={{ fontSize: 30, lineHeight: 34 }}>Your daily three</Display>
-            <Body style={{ fontFamily: fonts.bodyHeavy, fontSize: 14 }}>{doneCount} / 3 done</Body>
+            <Display style={{ fontSize: 30, lineHeight: 34 }}>
+              Your daily {total === 3 ? 'three' : total}
+            </Display>
+            <Body style={{ fontFamily: fonts.bodyHeavy, fontSize: 14 }}>
+              {doneCount} / {total} done
+            </Body>
           </View>
           <View style={styles.progress}>
-            {[0, 1, 2].map(i => (
+            {GAME_CATALOG.map((_, i) => (
               <View
                 key={i}
                 style={[
@@ -88,33 +93,18 @@ export function HomeScreen({ navigation }: Props) {
           </View>
         </View>
 
-        <DailyCard
-          title="Sudoku"
-          color={colors.sudoku}
-          light={false}
-          status={status?.sudoku.daily}
-          streak={status?.sudoku.streak}
-          art={<SudokuArt />}
-          onPress={() => navigation.navigate('Sudoku', { mode: { kind: 'daily' } })}
-        />
-        <DailyCard
-          title="Wordle"
-          color={colors.wordle}
-          light
-          status={status?.wordle.daily}
-          streak={status?.wordle.streak}
-          art={<WordleArt />}
-          onPress={() => navigation.navigate('Wordle', { mode: { kind: 'daily' } })}
-        />
-        <DailyCard
-          title="Mahjong"
-          color={colors.mahjong}
-          light
-          status={status?.mahjong.daily}
-          streak={status?.mahjong.streak}
-          art={<MahjongArt />}
-          onPress={() => navigation.navigate('Mahjong', { mode: { kind: 'daily' } })}
-        />
+        {GAME_CATALOG.map(game => (
+          <DailyCard
+            key={game.id}
+            title={game.label}
+            color={colors[game.colorKey]}
+            fg={game.onColor}
+            status={status?.[game.id].daily}
+            streak={status?.[game.id].streak}
+            art={<game.DailyArt />}
+            onPress={() => game.openDaily(navigation)}
+          />
+        ))}
 
         <View style={{ gap: 12, marginTop: 6 }}>
           <View style={styles.titleRow}>
@@ -145,43 +135,24 @@ export function HomeScreen({ navigation }: Props) {
                       color: on ? colors.onInk : colors.text,
                     }}
                   >
-                    {d[0].toUpperCase() + d.slice(1)}
+                    {capitalize(d)}
                   </Text>
                 </Chunky>
               );
             })}
           </ScrollView>
           <View style={styles.practiceRow}>
-            <PracticeCard
-              label="Sudoku"
-              sub={difficulty[0].toUpperCase() + difficulty.slice(1)}
-              color={colors.sudoku}
-              icon={<Ionicons name="grid" size={20} color="#FFFFFF" />}
-              resumable={status?.sudoku.resume.hasPractice}
-              onPress={() =>
-                navigation.navigate('Sudoku', { mode: { kind: 'random', difficulty } })
-              }
-            />
-            <PracticeCard
-              label="Wordle"
-              sub="5 letters"
-              color={colors.wordle}
-              icon={<Text style={styles.practiceGlyph}>W</Text>}
-              resumable={status?.wordle.resume.hasPractice}
-              onPress={() => navigation.navigate('Wordle', { mode: { kind: 'random' } })}
-            />
-            <PracticeCard
-              label="Mahjong"
-              sub="144 tiles"
-              color={colors.mahjong}
-              icon={
-                <Text style={[styles.practiceGlyph, { fontFamily: undefined, fontWeight: '700' }]}>
-                  中
-                </Text>
-              }
-              resumable={status?.mahjong.resume.hasPractice}
-              onPress={() => navigation.navigate('Mahjong', { mode: { kind: 'random' } })}
-            />
+            {GAME_CATALOG.map(game => (
+              <PracticeCard
+                key={game.id}
+                label={game.label}
+                sub={game.practiceSubtitle({ difficulty })}
+                color={colors[game.colorKey]}
+                icon={<game.PracticeIcon />}
+                resumable={status?.[game.id].resume.hasPractice}
+                onPress={() => game.openPractice(navigation, { difficulty })}
+              />
+            ))}
           </View>
         </View>
       </ScrollView>
@@ -206,7 +177,7 @@ function Logo() {
 function DailyCard({
   title,
   color,
-  light,
+  fg,
   status,
   streak,
   art,
@@ -214,7 +185,7 @@ function DailyCard({
 }: {
   title: string;
   color: string;
-  light: boolean; // true when the card color is light enough for ink text
+  fg: string; // text color that reads on `color`
   status?: DailyStatus;
   streak?: number;
   art: React.ReactNode;
@@ -226,7 +197,7 @@ function DailyCard({
     : status?.inProgress
       ? 'progress'
       : 'new';
-  const fg = light ? INK : '#FFFFFF';
+  const light = fg !== '#FFFFFF';
   const eyebrow =
     tone === 'done' ? 'Daily · Completed' : tone === 'progress' ? 'Daily · In progress' : 'Daily';
   const pill =
@@ -266,56 +237,6 @@ function DailyCard({
       </View>
       {art}
     </Chunky>
-  );
-}
-
-function SudokuArt() {
-  const cells = ['5', '', '7', '', '3', '1', '9', '', '4'];
-  return (
-    <View style={[styles.sudokuArt, { transform: [{ rotate: '6deg' }] }]}>
-      {cells.map((c, i) => (
-        <View
-          key={i}
-          style={[styles.sudokuArtCell, { backgroundColor: i === 4 ? '#FFD84D' : '#FFFFFF' }]}
-        >
-          <Text style={styles.sudokuArtText}>{c}</Text>
-        </View>
-      ))}
-    </View>
-  );
-}
-
-function WordleArt() {
-  const { colors } = useTheme();
-  const top = [colors.wordleAbsent, colors.wordleCorrect, colors.wordleCorrect, '#B9B4D0'];
-  return (
-    <View style={{ gap: 4, transform: [{ rotate: '-5deg' }] }}>
-      <View style={{ flexDirection: 'row', gap: 4 }}>
-        {top.map((c, i) => (
-          <View key={i} style={[styles.wordleArtTile, { backgroundColor: c }]} />
-        ))}
-      </View>
-      <View style={{ flexDirection: 'row', gap: 4 }}>
-        {[0, 1, 2, 3].map(i => (
-          <View key={i} style={[styles.wordleArtTile, { backgroundColor: '#FFFFFF' }]} />
-        ))}
-      </View>
-    </View>
-  );
-}
-
-function MahjongArt() {
-  const tile = (glyph: string, color: string, style: object) => (
-    <View style={[styles.mjArtTile, style]}>
-      <Text style={{ fontSize: 22, fontWeight: '700', color }}>{glyph}</Text>
-    </View>
-  );
-  return (
-    <View style={{ width: 96, height: 88 }}>
-      {tile('中', '#C81E45', { left: 0, top: 14, transform: [{ rotate: '-10deg' }] })}
-      {tile('發', '#127A50', { left: 50, top: 6, transform: [{ rotate: '8deg' }] })}
-      {tile('東', INK, { left: 26, top: 24 })}
-    </View>
   );
 }
 
@@ -396,37 +317,6 @@ const styles = StyleSheet.create({
     paddingRight: 18,
   },
   cardStreak: { flexDirection: 'row', alignItems: 'center', gap: 3 },
-  sudokuArt: {
-    width: 92,
-    height: 92,
-    padding: 4,
-    gap: 3,
-    backgroundColor: INK,
-    borderRadius: 14,
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-  },
-  sudokuArtCell: {
-    width: 26.6,
-    height: 26.6,
-    borderRadius: 6,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  sudokuArtText: { fontFamily: fonts.displaySemi, fontSize: 17, color: INK },
-  wordleArtTile: { width: 24, height: 24, borderRadius: 6, borderWidth: OUTLINE, borderColor: INK },
-  mjArtTile: {
-    position: 'absolute',
-    width: 42,
-    height: 56,
-    borderRadius: 9,
-    borderWidth: OUTLINE,
-    borderBottomWidth: OUTLINE + 4,
-    borderColor: INK,
-    backgroundColor: '#FFFDF6',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
   chip: { height: 38, paddingHorizontal: 16, alignItems: 'center', justifyContent: 'center' },
   practiceRow: { flexDirection: 'row', gap: 10 },
   practice: { padding: 12, paddingVertical: 14, gap: 8 },
@@ -438,7 +328,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  practiceGlyph: { fontFamily: fonts.display, fontSize: 20, color: INK },
   resume: {
     position: 'absolute',
     top: -10,

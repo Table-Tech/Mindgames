@@ -1,8 +1,10 @@
-import { getJSON, setJSON } from '@/storage/storage';
-import { todayISO } from '@/leaderboard/leaderboard';
-import { schedulePush } from '@/cloud/cloudSave';
+import { getJSON, remove, setJSON } from '@/storage/storage';
+import { shiftISO, todayISO } from '@/core/date';
+import { syncedDataChanged } from '@/core/events';
+import type { GameId } from '@/core/game';
 
-export type GameId = 'sudoku' | 'wordle' | 'mahjong';
+export type { GameId } from '@/core/game';
+export { formatTime } from '@/core/format';
 export type GameOutcome = 'won' | 'lost';
 export type GameMode = 'daily' | 'random';
 
@@ -23,12 +25,21 @@ export async function getRecords(): Promise<FinishRecord[]> {
   return (await getJSON<FinishRecord[]>(KEY)) ?? [];
 }
 
+/** Replaces all records without announcing a change (used by cloud merges). */
+export async function saveRecords(records: FinishRecord[]): Promise<void> {
+  await setJSON(KEY, records);
+}
+
+export async function clearRecords(): Promise<void> {
+  await remove(KEY);
+  syncedDataChanged.emit();
+}
+
 export async function recordFinish(r: FinishRecord): Promise<void> {
   const list = await getRecords();
   list.push(r);
   await setJSON(KEY, list);
-  // Mirror to cloud; debounced so back-to-back finishes coalesce.
-  schedulePush();
+  syncedDataChanged.emit();
 }
 
 export interface GameStats {
@@ -41,15 +52,6 @@ export interface GameStats {
   // Wordle-specific:
   avgGuesses: number | null;
   guessHistogram: number[]; // index 0..5 for 1..6 guesses
-}
-
-function isoOffset(iso: string, days: number): string {
-  const [y, m, d] = iso.split('-').map(Number);
-  const date = new Date(Date.UTC(y, m - 1, d + days));
-  const yy = date.getUTCFullYear();
-  const mm = (date.getUTCMonth() + 1).toString().padStart(2, '0');
-  const dd = date.getUTCDate().toString().padStart(2, '0');
-  return `${yy}-${mm}-${dd}`;
 }
 
 // Stats for a single Sudoku difficulty bucket. Hides win-streak fields since
@@ -111,7 +113,7 @@ export function computeStats(records: FinishRecord[], game: GameId): GameStats {
   let run = 0;
   let prev: string | null = null;
   for (const d of sorted) {
-    if (prev && isoOffset(prev, 1) === d) run++;
+    if (prev && shiftISO(prev, 1) === d) run++;
     else run = 1;
     if (run > bestStreak) bestStreak = run;
     prev = d;
@@ -120,7 +122,7 @@ export function computeStats(records: FinishRecord[], game: GameId): GameStats {
   let currentStreak = 0;
   if (dailyWinDates.size > 0) {
     const today = todayISO();
-    const yesterday = isoOffset(today, -1);
+    const yesterday = shiftISO(today, -1);
     let cursor: string | null = dailyWinDates.has(today)
       ? today
       : dailyWinDates.has(yesterday)
@@ -128,7 +130,7 @@ export function computeStats(records: FinishRecord[], game: GameId): GameStats {
         : null;
     while (cursor && dailyWinDates.has(cursor)) {
       currentStreak++;
-      cursor = isoOffset(cursor, -1);
+      cursor = shiftISO(cursor, -1);
     }
   }
 
@@ -157,13 +159,6 @@ export function computeStats(records: FinishRecord[], game: GameId): GameStats {
     avgGuesses,
     guessHistogram,
   };
-}
-
-export function formatTime(ms: number | null): string {
-  if (ms == null) return '—';
-  const s = Math.floor(ms / 1000);
-  const m = Math.floor(s / 60);
-  return `${m.toString().padStart(2, '0')}:${(s % 60).toString().padStart(2, '0')}`;
 }
 
 export function winRate(s: GameStats): number {

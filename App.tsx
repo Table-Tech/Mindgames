@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { StatusBar } from 'expo-status-bar';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { useFonts } from 'expo-font';
@@ -8,6 +8,7 @@ import { PreferencesProvider } from '@/prefs/PreferencesProvider';
 import { ThemeProvider, useTheme } from '@/theme/ThemeProvider';
 import { EntitlementsProvider } from '@/iap/EntitlementsProvider';
 import { RootNavigator } from '@/navigation/RootNavigator';
+import { cloudPreferencesSource, startCloudSync } from '@/cloud/cloudSave';
 
 function ThemedStatusBar() {
   const { isDark } = useTheme();
@@ -22,12 +23,14 @@ export default function App() {
     Nunito_800ExtraBold,
   });
 
+  useEffect(() => startCloudSync(), []);
+
   // Fall back to system fonts if loading fails rather than blocking the app.
   if (!fontsLoaded && !fontError) return null;
 
   return (
     <SafeAreaProvider>
-      <PreferencesProvider>
+      <PreferencesProvider remote={cloudPreferencesSource}>
         <ThemeProvider>
           <EntitlementsProvider>
             <ThemedStatusBar />

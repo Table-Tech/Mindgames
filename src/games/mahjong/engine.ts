@@ -70,22 +70,32 @@ export function generateMahjong(seed: number): Tile[] {
     return !(lb && rb);
   };
 
-  const pairs: [number, number][] = [];
-  while (remaining.size > 0) {
-    const free: number[] = [];
-    for (const id of remaining) if (isPosFree(id)) free.push(id);
-    if (free.length < 2) {
-      // Should not happen with the pyramid layout.
-      throw new Error('Mahjong generator: layout deadlock during reverse build');
+  // Random removal orders can paint themselves into a corner (fewer than two
+  // free tiles left), so retry with the same PRNG stream until one completes.
+  // The stream is seeded, so the result stays deterministic per seed.
+  const MAX_ATTEMPTS = 100;
+  let pairs: [number, number][] = [];
+  for (let attempt = 0; attempt < MAX_ATTEMPTS; attempt++) {
+    POSITIONS.forEach((_, i) => remaining.add(i));
+    pairs = [];
+    while (remaining.size > 0) {
+      const free: number[] = [];
+      for (const id of remaining) if (isPosFree(id)) free.push(id);
+      if (free.length < 2) break;
+      const i1 = Math.floor(rand() * free.length);
+      const p1 = free[i1];
+      free.splice(i1, 1);
+      const i2 = Math.floor(rand() * free.length);
+      const p2 = free[i2];
+      pairs.push([p1, p2]);
+      remaining.delete(p1);
+      remaining.delete(p2);
     }
-    const i1 = Math.floor(rand() * free.length);
-    const p1 = free[i1];
-    free.splice(i1, 1);
-    const i2 = Math.floor(rand() * free.length);
-    const p2 = free[i2];
-    pairs.push([p1, p2]);
-    remaining.delete(p1);
-    remaining.delete(p2);
+    if (remaining.size === 0) break;
+    remaining.clear();
+  }
+  if (pairs.length * 2 !== POSITIONS.length) {
+    throw new Error('Mahjong generator: layout deadlock during reverse build');
   }
 
   // Phase 2: assign tile groups. Each group has 4 glyphs and is mapped onto

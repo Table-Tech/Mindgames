@@ -1,6 +1,6 @@
-import { getJSON, setJSON } from '@/storage/storage';
-import { submitLeaderboardScore } from '@/cloud/firebase';
-import type { GameId } from '@/stats/stats';
+import { getJSON, remove, setJSON } from '@/storage/storage';
+import { createEmitter } from '@/core/events';
+import type { GameId } from '@/core/game';
 
 export interface LeaderboardEntry {
   name: string;
@@ -10,6 +10,9 @@ export interface LeaderboardEntry {
 }
 
 const KEY = 'sudoku.daily.leaderboard.v1';
+
+// The cloud layer subscribes to mirror scores remotely.
+export const leaderboardScoreSubmitted = createEmitter<LeaderboardEntry>();
 const MAX_ENTRIES = 50;
 
 export async function loadLeaderboard(): Promise<LeaderboardEntry[]> {
@@ -26,20 +29,10 @@ export async function submitScore(entry: LeaderboardEntry): Promise<LeaderboardE
   const trimmed = list.slice(0, MAX_ENTRIES);
   await setJSON(KEY, trimmed);
 
-  // Fire-and-forget cloud mirror; stub no-ops until Firebase is wired up.
-  if (entry.game) {
-    submitLeaderboardScore(entry.game, entry.date, {
-      name: entry.name,
-      timeMs: entry.timeMs,
-    }).catch(() => {});
-  }
+  leaderboardScoreSubmitted.emit(entry);
   return trimmed;
 }
 
-export function todayISO(): string {
-  const d = new Date();
-  const y = d.getUTCFullYear();
-  const m = (d.getUTCMonth() + 1).toString().padStart(2, '0');
-  const day = d.getUTCDate().toString().padStart(2, '0');
-  return `${y}-${m}-${day}`;
+export async function clearLeaderboard(): Promise<void> {
+  await remove(KEY);
 }

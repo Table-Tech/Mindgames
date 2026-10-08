@@ -15,7 +15,10 @@ import {
   type FinishRecord,
   type GameId,
 } from '@/stats/stats';
-import { loadLeaderboard, todayISO, type LeaderboardEntry } from '@/leaderboard/leaderboard';
+import { loadLeaderboard, type LeaderboardEntry } from '@/leaderboard/leaderboard';
+import { shiftISO, todayISO, weekdayIndex } from '@/core/date';
+import { capitalize } from '@/core/format';
+import { GAME_CATALOG } from '@/games/catalog';
 import { Body, Card, Chunky, Display, Eyebrow, OUTLINE, Segmented, TabBar } from '@/ui/kit';
 
 const INK = '#1D1A33';
@@ -74,31 +77,17 @@ export function StatsScreen() {
 
 // ---------- My stats ----------
 
-const GAMES: { id: GameId; label: string }[] = [
-  { id: 'sudoku', label: 'Sudoku' },
-  { id: 'wordle', label: 'Wordle' },
-  { id: 'mahjong', label: 'Mahjong' },
-];
-
-function shiftISO(iso: string, days: number) {
-  const [y, m, d] = iso.split('-').map(Number);
-  const date = new Date(Date.UTC(y, m - 1, d + days));
-  return date.toISOString().slice(0, 10);
-}
-
 function MyStats({ records }: { records: FinishRecord[] }) {
   const { colors } = useTheme();
   const [game, setGame] = useState<GameId>('sudoku');
 
-  const all = GAMES.map(g => computeStats(records, g.id));
+  const all = GAME_CATALOG.map(g => computeStats(records, g.id));
   const currentStreak = Math.max(...all.map(s => s.currentStreak));
   const bestStreak = Math.max(...all.map(s => s.bestStreak));
 
   // Current week, Monday first, marked when any daily was won that day.
   const today = todayISO();
-  const [y, m, d] = today.split('-').map(Number);
-  const weekday = (new Date(Date.UTC(y, m - 1, d)).getUTCDay() + 6) % 7;
-  const monday = shiftISO(today, -weekday);
+  const monday = shiftISO(today, -weekdayIndex(today));
   const wonDays = new Set(
     records.filter(r => r.mode === 'daily' && r.outcome === 'won').map(r => r.date),
   );
@@ -107,8 +96,9 @@ function MyStats({ records }: { records: FinishRecord[] }) {
     return { label, done: wonDays.has(iso), isToday: iso === today };
   });
 
-  const gameColor = { sudoku: colors.sudoku, wordle: colors.wordle, mahjong: colors.mahjong }[game];
-  const gameFg = game === 'sudoku' ? '#FFFFFF' : INK;
+  const entry = GAME_CATALOG.find(g => g.id === game) ?? GAME_CATALOG[0];
+  const gameColor = colors[entry.colorKey];
+  const gameFg = entry.onColor;
   const stats = computeStats(records, game);
 
   const bars: { label: string; n: number }[] =
@@ -116,7 +106,7 @@ function MyStats({ records }: { records: FinishRecord[] }) {
       ? stats.guessHistogram.map((n, i) => ({ label: `${i + 1}`, n }))
       : game === 'sudoku'
         ? computeSudokuByDifficulty(records).map(s => ({
-            label: s.difficulty[0].toUpperCase() + s.difficulty.slice(1),
+            label: capitalize(s.difficulty),
             n: s.won,
           }))
         : [];
@@ -174,9 +164,9 @@ function MyStats({ records }: { records: FinishRecord[] }) {
       </Card>
 
       <View style={{ flexDirection: 'row', gap: 8 }}>
-        {GAMES.map(g => {
+        {GAME_CATALOG.map(g => {
           const on = g.id === game;
-          const c = { sudoku: colors.sudoku, wordle: colors.wordle, mahjong: colors.mahjong }[g.id];
+          const c = colors[g.colorKey];
           return (
             <Chunky
               key={g.id}
@@ -192,7 +182,7 @@ function MyStats({ records }: { records: FinishRecord[] }) {
                 style={{
                   fontFamily: fonts.bodyHeavy,
                   fontSize: 14,
-                  color: on ? (g.id === 'sudoku' ? '#FFFFFF' : INK) : colors.text,
+                  color: on ? g.onColor : colors.text,
                 }}
               >
                 {g.label}
@@ -301,7 +291,7 @@ function Leaderboard({ entries }: { entries: LeaderboardEntry[] }) {
               numberOfLines={1}
             >
               {e.name}
-              {e.game ? ` · ${e.game[0].toUpperCase() + e.game.slice(1)}` : ''}
+              {e.game ? ` · ${capitalize(e.game)}` : ''}
             </Body>
             <Display
               style={{

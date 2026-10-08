@@ -26,18 +26,14 @@ describe('Wordle evaluate', () => {
   it('prioritises correct (green) over present (yellow)', () => {
     // The second S in "sassy" is in the correct position for "essay";
     // the first S should NOT also be marked yellow.
-    const result = evaluate('sassy', 'essay');
-    expect(result[1]).toBe('correct'); // s matches s in essay[1]? actually essay is e-s-s-a-y
     // essay = e s s a y; sassy = s a s s y
-    // pos 0: s vs e -> let's see if there is another s in essay -> yes -> present
-    // pos 1: a vs s -> a not present yet, but check... actually a is at essay[3] -> present
-    // pos 2: s vs s -> correct
-    // pos 3: s vs a -> s already consumed in pos2 (correct), another s available at essay[1] -> present
+    // pos 2: s vs s -> correct (claims essay[2] first)
+    // pos 0: s -> the remaining s at essay[1] -> present
+    // pos 1: a -> a at essay[3] -> present
+    // pos 3: s -> both s's already claimed -> absent
     // pos 4: y vs y -> correct
-    expect(result[0]).toBe('present');
-    expect(result[2]).toBe('correct');
-    expect(result[3]).toBe('present');
-    expect(result[4]).toBe('correct');
+    const result = evaluate('sassy', 'essay');
+    expect(result).toEqual(['present', 'present', 'correct', 'absent', 'correct']);
   });
 });
 

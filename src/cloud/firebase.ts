@@ -25,7 +25,7 @@ import {
   serverTimestamp,
 } from '@react-native-firebase/firestore';
 
-import type { GameId } from '@/stats/stats';
+import type { GameId } from '@/core/game';
 import type { FinishRecord } from '@/stats/stats';
 
 export interface CloudSavePayload {
@@ -164,7 +164,9 @@ export async function pullCloudSave(): Promise<CloudSavePayload | null> {
   if (!snap.exists) return null;
   const data = snap.data() ?? {};
   return {
-    statsRecords: Array.isArray(data.statsRecords) ? (data.statsRecords as FinishRecord[]) : undefined,
+    statsRecords: Array.isArray(data.statsRecords)
+      ? (data.statsRecords as FinishRecord[])
+      : undefined,
     playerName: typeof data.playerName === 'string' ? data.playerName : undefined,
     onboardingSeen:
       data.onboardingSeen && typeof data.onboardingSeen === 'object'

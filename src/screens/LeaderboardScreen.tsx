@@ -1,4 +1,3 @@
-import React from 'react';
 import { useEffect } from 'react';
 import { useNavigation, StackActions } from '@react-navigation/native';
 

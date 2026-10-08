@@ -2,131 +2,78 @@ import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { ActivityIndicator, Alert, ScrollView, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
+import { useNavigation } from '@react-navigation/native';
 import { useTheme } from '@/theme/ThemeProvider';
 import { fonts } from '@/theme/fonts';
-import {
-  Body,
-  Card,
-  Chunky,
-  Display,
-  formatClock,
-  IconButton,
-  ScreenHeader,
-  ToolButton,
-} from '@/ui/kit';
+import { Body, Card, Chunky, Display, IconButton, ScreenHeader, ToolButton } from '@/ui/kit';
+import { capitalize, formatClock, formatTime } from '@/core/format';
+import { todayISO } from '@/core/date';
 import { SudokuBoard } from '@/games/sudoku/SudokuBoard';
 import { DifficultyPicker } from '@/games/sudoku/DifficultyPicker';
-import { dailyPuzzle, randomPuzzle } from '@/games/sudoku/generator';
-import { isComplete } from '@/games/sudoku/findConflicts';
-import { clearNotes, clearPeerNotes, emptyNotes, toggleNote, Notes } from '@/games/sudoku/notes';
-import { autoPencil } from '@/games/sudoku/autoPencil';
-import { DIFFICULTY_POINTS, type Board, type Difficulty } from '@/games/sudoku/types';
+import { sudokuRepository, type SudokuPersistedState } from '@/games/sudoku/persistence';
 import {
-  clearSudoku,
-  loadSudoku,
-  saveSudoku,
-  type SudokuMode as PersistMode,
-  type SudokuPersistedState,
-} from '@/games/sudoku/persistence';
+  applyHint,
+  createSudokuGame,
+  eraseCell,
+  fillAutoPencil,
+  inputNumber,
+  MAX_MISTAKES,
+  remainingOf,
+  restoreSnapshot,
+  snapshotOf,
+  STARTING_HINTS,
+  tick,
+  togglePause as togglePauseState,
+  toPersistMode,
+  type SudokuSnapshot,
+  type SudokuStartMode,
+  type SudokuStep,
+} from '@/games/sudoku/session';
+import type { Difficulty } from '@/games/sudoku/types';
+import { useFinishFlow } from '@/games/shared/useFinishFlow';
+import { useUndoHistory } from '@/games/shared/useUndoHistory';
 import { AdBanner } from '@/ads/AdBanner';
-import { maybeShowInterstitial } from '@/ads/interstitial';
-import { useEntitlements } from '@/iap/EntitlementsProvider';
-import { submitScore, todayISO } from '@/leaderboard/leaderboard';
-import { recordFinish } from '@/stats/stats';
 import { useFeedback } from '@/feedback/useFeedback';
-import { usePreferences } from '@/prefs/PreferencesProvider';
 import { ResultModal } from '@/components/ResultModal';
 import { NameInputModal } from '@/components/NameInputModal';
 import { Onboarding } from '@/components/Onboarding';
 import { SUDOKU_ONBOARDING } from '@/onboarding/steps';
 import { useOnboarding } from '@/onboarding/useOnboarding';
-import { useNavigation } from '@react-navigation/native';
-
-type NavMode = { kind: 'random'; difficulty: Difficulty } | { kind: 'daily' };
 
 interface Props {
-  mode: NavMode;
-}
-
-const MAX_MISTAKES = 3;
-const STARTING_HINTS = 3;
-const MISTAKE_PENALTY = 50;
-const HINT_PENALTY = 100;
-
-interface Snapshot {
-  board: Board;
-  notes: Notes;
-  wrong: Set<number>;
-  hintLocked: Set<number>;
-  mistakes: number;
-  hintsLeft: number;
-  score: number;
-}
-
-function formatTime(ms: number) {
-  const s = Math.floor(ms / 1000);
-  const m = Math.floor(s / 60);
-  return `${m.toString().padStart(2, '0')}:${(s % 60).toString().padStart(2, '0')}`;
-}
-
-function notesToArrays(notes: Notes): number[][] {
-  return notes.map(s => Array.from(s));
-}
-function arraysToNotes(arr: number[][]): Notes {
-  return arr.map(a => new Set(a));
-}
-
-function freshState(navMode: NavMode, difficultyOverride?: Difficulty): SudokuPersistedState {
-  const difficulty =
-    difficultyOverride ?? (navMode.kind === 'random' ? navMode.difficulty : 'medium');
-  const puzzle = navMode.kind === 'daily' ? dailyPuzzle() : randomPuzzle(difficulty);
-  return {
-    difficulty: puzzle.difficulty,
-    given: puzzle.given.slice(),
-    solution: puzzle.solution.slice(),
-    seed: puzzle.seed,
-    board: puzzle.given.slice(),
-    notes: Array.from({ length: 81 }, () => []),
-    hintLocked: [],
-    wrong: [],
-    mistakes: 0,
-    hintsLeft: STARTING_HINTS,
-    score: 0,
-    elapsedMs: 0,
-    paused: false,
-    outcome: 'playing',
-  };
+  mode: SudokuStartMode;
 }
 
 export function SudokuScreen({ mode: navMode }: Props) {
   const { colors } = useTheme();
-  const { adsRemoved } = useEntitlements();
   const fb = useFeedback();
-  const { prefs, setPref } = usePreferences();
   const navigation = useNavigation();
-  const [resultVisible, setResultVisible] = useState(false);
-  const [nameModalVisible, setNameModalVisible] = useState(false);
-  const pendingDailyResultRef = React.useRef<{ timeMs: number; score: number } | null>(null);
   const onboarding = useOnboarding('sudoku');
+  const finishFlow = useFinishFlow('sudoku', navMode.kind);
+  const history = useUndoHistory<SudokuSnapshot>();
+  const { clear: clearHistory } = history;
+  const { finish } = finishFlow;
 
-  const persistMode: PersistMode = useMemo(
-    () => (navMode.kind === 'daily' ? { kind: 'daily' } : { kind: 'random' }),
-    [navMode.kind],
-  );
+  const persistMode = useMemo(() => toPersistMode(navMode), [navMode.kind]);
 
   const [state, setState] = useState<SudokuPersistedState | null>(null);
   const [loading, setLoading] = useState(true);
-  const [history, setHistory] = useState<Snapshot[]>([]);
   const [notesMode, setNotesMode] = useState(false);
   const [selected, setSelected] = useState<number | null>(null);
   const [finishHandled, setFinishHandled] = useState(false);
+
+  const resetUi = useCallback(() => {
+    clearHistory();
+    setSelected(null);
+    setNotesMode(false);
+  }, [clearHistory]);
 
   // Load or generate.
   useEffect(() => {
     let cancelled = false;
     (async () => {
       setLoading(true);
-      const saved = await loadSudoku(persistMode);
+      const saved = await sudokuRepository.load(persistMode);
       if (cancelled) return;
       if (saved) {
         setState(saved);
@@ -136,12 +83,10 @@ export function SudokuScreen({ mode: navMode }: Props) {
         // loading indicator renders.
         await new Promise(resolve => setTimeout(resolve, 0));
         if (cancelled) return;
-        setState(freshState(navMode));
+        setState(createSudokuGame(navMode));
         setFinishHandled(false);
       }
-      setHistory([]);
-      setSelected(null);
-      setNotesMode(false);
+      resetUi();
       setLoading(false);
     })();
     return () => {
@@ -151,248 +96,55 @@ export function SudokuScreen({ mode: navMode }: Props) {
 
   // Persist every change.
   useEffect(() => {
-    if (!state) return;
-    saveSudoku(persistMode, state);
+    if (state) sudokuRepository.save(persistMode, state);
   }, [state, persistMode]);
 
   // Timer (only ticks while playing and not paused).
   useEffect(() => {
     if (!state || state.outcome !== 'playing' || state.paused) return;
-    const t = setInterval(() => {
-      setState(s => (s ? { ...s, elapsedMs: s.elapsedMs + 1000 } : s));
-    }, 1000);
+    const t = setInterval(() => setState(s => (s ? tick(s, 1000) : s)), 1000);
     return () => clearInterval(t);
   }, [state?.outcome, state?.paused, !!state]);
 
-  const wrongSet = useMemo(() => new Set(state?.wrong ?? []), [state?.wrong]);
-  const hintLockedSet = useMemo(() => new Set(state?.hintLocked ?? []), [state?.hintLocked]);
-  const notes = useMemo(() => (state ? arraysToNotes(state.notes) : emptyNotes()), [state?.notes]);
-
-  const isLocked = useCallback(
-    (i: number) => !!state && (state.given[i] !== 0 || hintLockedSet.has(i)),
-    [state, hintLockedSet],
-  );
-
-  const pushSnapshot = useCallback(() => {
-    if (!state) return;
-    setHistory(h => [
-      ...h,
-      {
-        board: state.board.slice(),
-        notes: arraysToNotes(state.notes),
-        wrong: new Set(state.wrong),
-        hintLocked: new Set(state.hintLocked),
-        mistakes: state.mistakes,
-        hintsLeft: state.hintsLeft,
-        score: state.score,
-      },
-    ]);
-  }, [state]);
-
-  const finish = useCallback(
-    async (finalScore: number, finalElapsed: number, won: boolean) => {
-      const shouldInterstitial = await maybeShowInterstitial(adsRemoved);
-      if (shouldInterstitial) Alert.alert('Ad', '(Interstitial would show here)');
-
-      await recordFinish({
-        game: 'sudoku',
-        mode: navMode.kind,
-        outcome: won ? 'won' : 'lost',
-        timeMs: finalElapsed,
-        date: todayISO(),
-        difficulty: state?.difficulty,
-        score: finalScore,
-      });
-
-      if (!won) {
-        setResultVisible(true);
-        return;
-      }
-
-      if (navMode.kind === 'daily') {
-        pendingDailyResultRef.current = { timeMs: finalElapsed, score: finalScore };
-        if (!prefs.playerName) {
-          setNameModalVisible(true);
-          return;
-        }
-        await submitScore({
-          name: prefs.playerName,
-          timeMs: finalElapsed,
-          date: todayISO(),
-          game: 'sudoku',
-        });
-      }
-      setResultVisible(true);
-    },
-    [adsRemoved, navMode.kind, state?.difficulty, prefs.playerName],
-  );
-
-  // Trigger finish-side-effects once when game ends.
+  // Run the shared finish flow once when the game ends.
   useEffect(() => {
     if (!state || state.outcome === 'playing' || finishHandled) return;
     setFinishHandled(true);
-    finish(state.score, state.elapsedMs, state.outcome === 'won');
+    finish({
+      won: state.outcome === 'won',
+      timeMs: state.elapsedMs,
+      difficulty: state.difficulty,
+      score: state.score,
+    });
   }, [state, finishHandled, finish]);
 
-  const inputNumber = (n: number) => {
-    if (!state || state.outcome !== 'playing' || state.paused) return;
-    if (selected == null) return;
-    if (isLocked(selected)) return;
+  const notes = useMemo(() => (state ? state.notes.map(n => new Set(n)) : []), [state?.notes]);
+  const wrongSet = useMemo(() => new Set(state?.wrong ?? []), [state?.wrong]);
 
-    if (notesMode && n !== 0) {
-      if (state.board[selected] !== 0) return;
-      const nextNotes = toggleNote(arraysToNotes(state.notes), selected, n);
-      pushSnapshot();
-      setState({ ...state, notes: notesToArrays(nextNotes) });
-      return;
-    }
-
-    pushSnapshot();
-
-    const current = state.board[selected];
-    const placing = current === n ? 0 : n;
-
-    const nextBoard = state.board.slice();
-    nextBoard[selected] = placing;
-
-    const nextWrong = new Set(state.wrong);
-    let nextMistakes = state.mistakes;
-    let nextScore = state.score;
-
-    if (placing === 0) {
-      nextWrong.delete(selected);
-    } else if (placing === state.solution[selected]) {
-      nextWrong.delete(selected);
-      nextScore += DIFFICULTY_POINTS[state.difficulty];
-      fb.correct();
-    } else {
-      nextWrong.add(selected);
-      nextMistakes += 1;
-      nextScore = Math.max(0, nextScore - MISTAKE_PENALTY);
-      fb.wrong();
-    }
-
-    let nextNotes = clearNotes(arraysToNotes(state.notes), selected);
-    if (placing !== 0 && placing === state.solution[selected]) {
-      nextNotes = clearPeerNotes(nextNotes, selected, placing);
-    }
-
-    const lost = nextMistakes >= MAX_MISTAKES;
-    const won = !lost && isComplete(nextBoard) && nextWrong.size === 0;
-
-    if (won) fb.win();
-    else if (lost) fb.lose();
-
-    setState({
-      ...state,
-      board: nextBoard,
-      notes: notesToArrays(nextNotes),
-      wrong: Array.from(nextWrong),
-      mistakes: nextMistakes,
-      score: nextScore,
-      outcome: lost ? 'lost' : won ? 'won' : 'playing',
-    });
-  };
-
-  const erase = () => {
-    if (!state || state.outcome !== 'playing' || state.paused) return;
-    if (selected == null) return;
-    if (isLocked(selected)) return;
-    if (state.board[selected] === 0 && state.notes[selected].length === 0) return;
-
-    pushSnapshot();
-
-    if (state.board[selected] !== 0) {
-      const next = state.board.slice();
-      next[selected] = 0;
-      const nextWrong = new Set(state.wrong);
-      nextWrong.delete(selected);
-      setState({
-        ...state,
-        board: next,
-        wrong: Array.from(nextWrong),
-      });
-    } else {
-      const nextNotes = clearNotes(arraysToNotes(state.notes), selected);
-      setState({ ...state, notes: notesToArrays(nextNotes) });
-    }
+  // Apply a session step: remember the previous state for undo, then play cues.
+  const apply = (step: SudokuStep | null) => {
+    if (!state || !step) return;
+    history.push(snapshotOf(state));
+    setState(step.state);
+    fb.play(step.cues);
   };
 
   const undo = () => {
     if (!state || state.outcome !== 'playing') return;
-    const last = history[history.length - 1];
-    if (!last) return;
-    setHistory(h => h.slice(0, -1));
-    setState({
-      ...state,
-      board: last.board,
-      notes: notesToArrays(last.notes),
-      wrong: Array.from(last.wrong),
-      hintLocked: Array.from(last.hintLocked),
-      mistakes: last.mistakes,
-      hintsLeft: last.hintsLeft,
-      score: last.score,
-    });
+    const last = history.pop();
+    if (last) setState(restoreSnapshot(state, last));
   };
 
-  const useHint = () => {
-    if (!state || state.outcome !== 'playing' || state.paused) return;
-    if (state.hintsLeft <= 0) return;
-    if (selected == null) return;
-    if (isLocked(selected)) return;
-    if (state.board[selected] === state.solution[selected]) return;
-
-    pushSnapshot();
-
-    const correct = state.solution[selected];
-    const nextBoard = state.board.slice();
-    nextBoard[selected] = correct;
-    const nextWrong = new Set(state.wrong);
-    nextWrong.delete(selected);
-    const nextLocked = new Set(state.hintLocked);
-    nextLocked.add(selected);
-    const nextNotes = clearPeerNotes(
-      clearNotes(arraysToNotes(state.notes), selected),
-      selected,
-      correct,
-    );
-
-    const won = isComplete(nextBoard) && nextWrong.size === 0;
-    setState({
-      ...state,
-      board: nextBoard,
-      notes: notesToArrays(nextNotes),
-      wrong: Array.from(nextWrong),
-      hintLocked: Array.from(nextLocked),
-      hintsLeft: state.hintsLeft - 1,
-      score: Math.max(0, state.score - HINT_PENALTY),
-      outcome: won ? 'won' : 'playing',
-    });
-  };
-
-  const fillAutoPencil = () => {
-    if (!state || state.outcome !== 'playing' || state.paused) return;
-    pushSnapshot();
-    const next = autoPencil(state.board, i => isLocked(i));
-    setState({ ...state, notes: notesToArrays(next) });
-  };
-
-  const togglePause = () => {
-    if (!state || state.outcome !== 'playing') return;
-    setState({ ...state, paused: !state.paused });
-  };
+  const togglePause = () => state && setState(togglePauseState(state));
 
   const startNewGame = useCallback(
     async (difficulty?: Difficulty) => {
-      await clearSudoku(persistMode);
-      const next = freshState(navMode, difficulty);
-      setState(next);
-      setHistory([]);
-      setSelected(null);
-      setNotesMode(false);
+      await sudokuRepository.clear(persistMode);
+      setState(createSudokuGame(navMode, difficulty));
+      resetUi();
       setFinishHandled(false);
     },
-    [persistMode, navMode],
+    [persistMode, navMode, resetUi],
   );
 
   const promptNewGame = () => {
@@ -416,9 +168,7 @@ export function SudokuScreen({ mode: navMode }: Props) {
     );
   }
 
-  const difficultyLabel = state.difficulty[0].toUpperCase() + state.difficulty.slice(1);
-  const remainingOf = (n: number) =>
-    9 - state.board.filter((v, i) => v === n && v === state.solution[i]).length;
+  const difficultyLabel = capitalize(state.difficulty);
 
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
@@ -506,10 +256,14 @@ export function SudokuScreen({ mode: navMode }: Props) {
           <ToolButton
             icon="arrow-undo"
             label="Undo"
-            disabled={history.length === 0 || state.outcome !== 'playing'}
+            disabled={!history.canUndo || state.outcome !== 'playing'}
             onPress={undo}
           />
-          <ToolButton icon="backspace-outline" label="Erase" onPress={erase} />
+          <ToolButton
+            icon="backspace-outline"
+            label="Erase"
+            onPress={() => apply(eraseCell(state, selected))}
+          />
           <ToolButton
             icon="pencil"
             label="Notes"
@@ -523,18 +277,22 @@ export function SudokuScreen({ mode: navMode }: Props) {
             label="Hint"
             badge={state.hintsLeft}
             disabled={state.hintsLeft === 0}
-            onPress={useHint}
+            onPress={() => apply(applyHint(state, selected))}
           />
-          <ToolButton icon="sparkles-outline" label="Auto" onPress={fillAutoPencil} />
+          <ToolButton
+            icon="sparkles-outline"
+            label="Auto"
+            onPress={() => apply(fillAutoPencil(state))}
+          />
         </View>
 
         <View style={styles.pad}>
           {[1, 2, 3, 4, 5, 6, 7, 8, 9].map(n => {
-            const left = remainingOf(n);
+            const left = remainingOf(state, n);
             return (
               <Chunky
                 key={n}
-                onPress={() => inputNumber(n)}
+                onPress={() => apply(inputNumber(state, selected, n, notesMode))}
                 disabled={left <= 0}
                 accessibilityLabel={`Enter ${n}`}
                 depth={3}
@@ -573,34 +331,10 @@ export function SudokuScreen({ mode: navMode }: Props) {
         onClose={onboarding.dismiss}
       />
 
-      <NameInputModal
-        visible={nameModalVisible}
-        title="Save your daily score"
-        message="We'll remember your name for future daily scores. You can change it later in Settings."
-        placeholder="Your name"
-        defaultValue={prefs.playerName}
-        onSubmit={async name => {
-          setNameModalVisible(false);
-          const finalName = name || 'Anon';
-          setPref('playerName', name);
-          const r = pendingDailyResultRef.current;
-          if (r)
-            await submitScore({
-              name: finalName,
-              timeMs: r.timeMs,
-              date: todayISO(),
-              game: 'sudoku',
-            });
-          setResultVisible(true);
-        }}
-        onDismiss={() => {
-          setNameModalVisible(false);
-          setResultVisible(true);
-        }}
-      />
+      <NameInputModal {...finishFlow.nameModal} />
 
       <ResultModal
-        visible={resultVisible}
+        visible={finishFlow.resultVisible}
         won={state.outcome === 'won'}
         accent={colors.sudoku}
         title={state.outcome === 'won' ? 'Solved!' : 'Out of hearts'}
@@ -626,7 +360,7 @@ export function SudokuScreen({ mode: navMode }: Props) {
         }}
         primaryLabel={navMode.kind === 'daily' ? 'Back to menu' : 'Play again'}
         onPrimary={() => {
-          setResultVisible(false);
+          finishFlow.hideResult();
           if (navMode.kind === 'random') startNewGame();
           else navigation.goBack();
         }}
@@ -634,7 +368,7 @@ export function SudokuScreen({ mode: navMode }: Props) {
         onSecondary={
           navMode.kind === 'random'
             ? () => {
-                setResultVisible(false);
+                finishFlow.hideResult();
                 navigation.goBack();
               }
             : undefined

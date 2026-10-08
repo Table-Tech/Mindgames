@@ -1,10 +1,13 @@
 import { Share } from 'react-native';
+import type { GameId } from '@/core/game';
+import { capitalize, formatTime } from '@/core/format';
 import type { Guess } from '@/games/wordle/types';
 
+// Squares match the in-app Wordle colors (blue = correct, yellow = present).
 const SQUARES: Record<string, string> = {
-  correct: '\u{1F7E9}', // 🟩
+  correct: '\u{1F7E6}', // 🟦
   present: '\u{1F7E8}', // 🟨
-  absent: '\u{2B1B}', // ⬛ (works for both light and dark; could swap to ⬜ if you want)
+  absent: '\u{2B1B}', // ⬛
 };
 
 export function wordleShareText(guesses: Guess[], maxGuesses: number, dayLabel: string): string {
@@ -15,42 +18,56 @@ export function wordleShareText(guesses: Guess[], maxGuesses: number, dayLabel: 
   return `${head}\n\n${grid}`;
 }
 
-export interface ResultShare {
-  game: 'sudoku' | 'wordle' | 'mahjong';
-  difficulty?: string;
+interface BaseShare {
   timeMs: number;
-  score?: number;
-  guesses?: number;
-  maxGuesses?: number;
   won: boolean;
   dayLabel?: string; // for daily mode
-  wordleGuesses?: Guess[];
 }
 
-function fmtTime(ms: number) {
-  const s = Math.floor(ms / 1000);
-  const m = Math.floor(s / 60);
-  return `${m.toString().padStart(2, '0')}:${(s % 60).toString().padStart(2, '0')}`;
+export interface SudokuShare extends BaseShare {
+  game: 'sudoku';
+  difficulty: string;
+  score: number;
 }
 
-export function buildShareText(r: ResultShare): string {
-  if (r.game === 'wordle' && r.wordleGuesses && r.maxGuesses) {
-    return wordleShareText(r.wordleGuesses, r.maxGuesses, r.dayLabel ?? '');
-  }
-  const parts: string[] = [];
-  const gameLabel = r.game[0].toUpperCase() + r.game.slice(1);
-  const tag = r.dayLabel ? `${gameLabel} ${r.dayLabel}` : gameLabel;
-  parts.push(`Puzzaro ${tag}`);
+export interface WordleShare extends BaseShare {
+  game: 'wordle';
+  maxGuesses: number;
+  wordleGuesses: Guess[];
+}
+
+export interface MahjongShare extends BaseShare {
+  game: 'mahjong';
+  score: number;
+}
+
+// Each game only carries the fields it actually shares.
+export type ResultShare = SudokuShare | WordleShare | MahjongShare;
+
+function summaryText(r: BaseShare & { game: GameId; difficulty?: string; score?: number }): string {
+  const label = capitalize(r.game);
+  const parts = [`Puzzaro ${r.dayLabel ? `${label} ${r.dayLabel}` : label}`];
   if (r.difficulty) parts.push(`Difficulty: ${r.difficulty}`);
-  parts.push(r.won ? `Solved in ${fmtTime(r.timeMs)}` : 'Did not solve');
+  parts.push(r.won ? `Solved in ${formatTime(r.timeMs)}` : 'Did not solve');
   if (typeof r.score === 'number') parts.push(`Score: ${r.score}`);
   return parts.join(' · ');
 }
 
+// One formatter per game; adding a game adds an entry, nothing else changes.
+const FORMATTERS: { [K in GameId]: (r: Extract<ResultShare, { game: K }>) => string } = {
+  sudoku: summaryText,
+  wordle: r => wordleShareText(r.wordleGuesses, r.maxGuesses, r.dayLabel ?? ''),
+  mahjong: summaryText,
+};
+
+export function buildShareText(r: ResultShare): string {
+  const format = FORMATTERS[r.game] as (r: ResultShare) => string;
+  return format(r);
+}
+
 export async function shareResult(r: ResultShare): Promise<void> {
-  const message = buildShareText(r);
   try {
-    await Share.share({ message });
+    await Share.share({ message: buildShareText(r) });
   } catch {
     // user dismissed
   }
