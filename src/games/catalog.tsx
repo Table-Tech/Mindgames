@@ -140,8 +140,8 @@ const styles = StyleSheet.create({
     flexWrap: 'wrap',
   },
   sudokuArtCell: {
-    width: 26.6,
-    height: 26.6,
+    width: 25.5,
+    height: 25.5,
     borderRadius: 6,
     alignItems: 'center',
     justifyContent: 'center',
