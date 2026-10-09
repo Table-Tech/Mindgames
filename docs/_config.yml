@@ -1,0 +1,11 @@
+# GitHub Pages site for Puzzaro's public pages (privacy policy, support).
+# Serve from: Settings → Pages → Deploy from a branch → main / docs
+title: Puzzaro
+description: Daily Sudoku, Word Guess and Mahjong — by TechTable
+theme: jekyll-theme-minimal
+
+# Internal working documents stay in the repo but are not published.
+exclude:
+  - RELEASE_CHECKLIST.md
+  - store-listing.md
+  - admob-plugin.json

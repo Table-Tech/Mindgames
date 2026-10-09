@@ -1,13 +1,14 @@
+---
+title: Puzzaro Privacy Policy
+---
+
 # Puzzaro Privacy Policy
 
 _Last updated: 9 October 2026_
 
-> **Draft.** Fill in every `[PLACEHOLDER]`, check it against the final app, have it reviewed, and publish it at a public URL. Both the App Store and Google Play
-> require that URL in the store listing.
-
 This policy explains what information the Puzzaro app ("the app", "we") collects, why, and what
-choices you have. The app is made by [DEVELOPER OR COMPANY NAME], [ADDRESS / COUNTRY], who is the
-data controller for the purposes of the EU General Data Protection Regulation (GDPR).
+choices you have. The app is made by **TechTable** (the Netherlands, Chamber of Commerce no. 98067826),
+which is the data controller for the purposes of the EU General Data Protection Regulation (GDPR).
 
 ## Summary
 
@@ -41,7 +42,7 @@ notification data is sent to us.
 We use these processors, each bound by their own data protection terms:
 
 - **Google Firebase** (Authentication, Cloud Firestore) — Google Ireland Ltd. / Google LLC.
-  Data is stored in [FIRESTORE REGION, e.g. europe-west].
+  Data is stored in the European Union (Google Cloud multi-region `eur3`).
 - **Apple** and **Google** — app distribution.
 
 Some providers may process data outside the EU. Where that happens, transfers are covered by the
@@ -57,7 +58,7 @@ European Commission's Standard Contractual Clauses or an adequacy decision.
 
 Under the GDPR you have the right to access, correct, delete and port your data, and to object to or
 restrict processing. The quickest way to delete everything is **Settings → Clear all data**. For any
-other request, contact us at [CONTACT EMAIL]. Because we only know your anonymous ID, we may ask you
+other request, contact us at [info@techtable.nl](mailto:info@techtable.nl). Because we only know your anonymous ID, we may ask you
 to include the leaderboard name you used so we can find your data. You can also complain to your data
 protection authority (in the Netherlands: the Autoriteit Persoonsgegevens).
 
@@ -74,7 +75,7 @@ let you know in the app.
 
 ## Contact
 
-[DEVELOPER OR COMPANY NAME] · [CONTACT EMAIL] · [WEBSITE]
+TechTable · [info@techtable.nl](mailto:info@techtable.nl) · [techtable.nl](https://techtable.nl)
 
 <!--
 WHEN ADS AND "REMOVE ADS" ARE TURNED ON, ADD BACK:

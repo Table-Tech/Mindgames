@@ -76,8 +76,9 @@ Legenda: `[x]` = gedaan / bestaat · `[ ]` = nog te doen.
 - [x] **iPad wordt ondersteund**
 
 **Privacy en juridisch 👤**
-- [ ] 🔴👤 Privacybeleid afmaken en online zetten (concept klopt met v1: geen ads/aankopen; nog in te vullen: naam, adres/land, Firestore-regio, e-mail, website)
-- [ ] 🔴👤 Support-URL of -e-mailadres (Apple verplicht een support-URL)
+- [x] Privacybeleid ingevuld (TechTable, KvK 98067826, info@techtable.nl, data in de EU) en supportpagina gemaakt
+- [ ] 🔴👤 GitHub Pages aanzetten (Settings → Pages → main / docs) → https://table-tech.github.io/Mindgames/privacy-policy
+- [x] Support-URL: https://table-tech.github.io/Mindgames/support
 - [ ] 🔴👤 Nieuwe Firestore-rules deployen (eigenaars mogen hun eigen scores nu verwijderen; nodig voor "Clear all data"): `firebase deploy --only firestore:rules`
 
 **Aankopen ("Remove ads") 👤** — pas nodig samen met ads, niet voor v1
@@ -118,7 +119,7 @@ Legenda: `[x]` = gedaan / bestaat · `[ ]` = nog te doen.
 
 ### C. Alleen Google Play 🟠
 - [ ] 🟠👤 Play Console-account ($25 eenmalig) en identiteitsverificatie
-- [ ] 🟠👤 **Verplichte gesloten test bij een nieuw persoonlijk account: minimaal 12 testers, 14 dagen aaneengesloten.** Plan dit vroeg: het is meestal het langste traject.
+- [x] Bedrijfsaccount: de verplichte gesloten test (12 testers / 14 dagen) geldt **niet**; direct naar productie kan. Een korte interne test blijft verstandig.
 - [ ] 🟠👤 Data safety-formulier invullen
 - [ ] 🟠👤 Contentclassificatie (IARC) en doelgroep (13+ of 18+, om het Families-beleid te vermijden)
 - [ ] 🟠👤 "Bevat advertenties" aanvinken

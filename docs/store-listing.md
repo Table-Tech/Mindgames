@@ -7,9 +7,10 @@
 
 - **App name** (App Store max. 30, Play max. 30): `Puzzaro: Daily Puzzles` (22)
 - **Category**: Games → Puzzle (App Store secondary: Games → Word)
-- **Support URL**: [SUPPORT URL]
-- **Privacy policy URL**: [PRIVACY POLICY URL] (see `docs/privacy-policy.md`)
-- **Contact email**: [CONTACT EMAIL]
+- **Support URL**: https://table-tech.github.io/Mindgames/support
+- **Privacy policy URL**: https://table-tech.github.io/Mindgames/privacy-policy
+- **Contact email**: info@techtable.nl
+- **Website**: https://techtable.nl
 
 ## Apple App Store
 
