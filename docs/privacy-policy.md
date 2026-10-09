@@ -1,6 +1,6 @@
 # Puzzaro Privacy Policy
 
-_Last updated: [DATE]_
+_Last updated: 9 October 2026_
 
 > **Draft.** Fill in every `[PLACEHOLDER]`, check it against the final app, have it reviewed, and publish it at a public URL. Both the App Store and Google Play
 > require that URL in the store listing.
@@ -24,15 +24,9 @@ data controller for the purposes of the EU General Data Protection Regulation (G
 | Leaderboard name you choose (optional, max. 16 characters) | Show your name next to your daily score | On your device and Google Cloud Firestore | Performance of the service |
 | Game statistics (games played, wins, times, scores, difficulty, guess counts) and onboarding progress | Show your statistics and streaks, and restore them on reinstall | On your device and Google Cloud Firestore | Performance of the service |
 | Daily score submissions (name, time, game, date) | Daily leaderboards | Google Cloud Firestore | Performance of the service |
-| Purchase information ("Remove ads" status, an anonymous purchase ID) | Unlock and restore your purchase | RevenueCat, Apple App Store / Google Play | Performance of a contract |
 | Settings (theme, sound, haptics, reminder time, game options) | Remember your preferences | Only on your device | Legitimate interest |
 
-**Advertising.** The app shows ads through
-Google AdMob. AdMob may collect your device's advertising identifier, IP address and information
-about ad interactions to show and measure ads. In the EEA, UK and Switzerland we ask for your consent
-before personalized ads are shown; on iOS we ask for permission to track through Apple's App
-Tracking Transparency. You can change your choice at any time in **Settings → Privacy choices**. Buying "Remove ads" turns ads off completely. See
-[Google's privacy policy](https://policies.google.com/privacy).
+The app shows no advertising and has no in-app purchases.
 
 We do **not** sell your personal data, and we don't use it for anything other than the purposes
 above.
@@ -48,9 +42,7 @@ We use these processors, each bound by their own data protection terms:
 
 - **Google Firebase** (Authentication, Cloud Firestore) — Google Ireland Ltd. / Google LLC.
   Data is stored in [FIRESTORE REGION, e.g. europe-west].
-- **RevenueCat, Inc.** — purchase management.
-- **Apple** and **Google** — app distribution and payments.
-- **Google AdMob** — advertising.
+- **Apple** and **Google** — app distribution.
 
 Some providers may process data outside the EU. Where that happens, transfers are covered by the
 European Commission's Standard Contractual Clauses or an adequacy decision.
@@ -60,7 +52,6 @@ European Commission's Standard Contractual Clauses or an adequacy decision.
 - Data on your device stays until you clear it in the app or uninstall the app.
 - Cloud data (save and daily scores) stays until you choose **Settings → Clear all data**, which
   deletes your cloud save, the daily scores submitted from your device, and your anonymous account.
-- [OPTIONAL: describe automatic cleanup of old leaderboard days, if you add it.]
 
 ## Your rights
 
@@ -72,7 +63,7 @@ protection authority (in the Netherlands: the Autoriteit Persoonsgegevens).
 
 ## Children
 
-The app is not directed at children under 13 [or the age required in your country], and we don't
+The app is not directed at children under 13, and we don't
 knowingly collect personal data from them. If you believe a child has provided personal data, contact
 us and we will delete it.
 
@@ -84,3 +75,23 @@ let you know in the app.
 ## Contact
 
 [DEVELOPER OR COMPANY NAME] · [CONTACT EMAIL] · [WEBSITE]
+
+<!--
+WHEN ADS AND "REMOVE ADS" ARE TURNED ON, ADD BACK:
+
+In "What we collect and why":
+| Purchase information ("Remove ads" status, an anonymous purchase ID) | Unlock and restore your purchase | RevenueCat, Apple App Store / Google Play | Performance of a contract |
+
+Replace "The app shows no advertising and has no in-app purchases." with:
+**Advertising.** The app shows ads through
+Google AdMob. AdMob may collect your device's advertising identifier, IP address and information
+about ad interactions to show and measure ads. In the EEA, UK and Switzerland we ask for your consent
+before personalized ads are shown; on iOS we ask for permission to track through Apple's App
+Tracking Transparency. You can change your choice at any time in **Settings → Privacy choices**. Buying "Remove ads" turns ads off completely. See
+[Google's privacy policy](https://policies.google.com/privacy).
+
+In "Service providers":
+- **RevenueCat, Inc.** — purchase management.
+- **Apple** and **Google** — app distribution and payments.
+- **Google AdMob** — advertising.
+-->

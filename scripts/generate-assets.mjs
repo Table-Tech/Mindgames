@@ -71,68 +71,94 @@ function sdRoundBox(px, py, half, r) {
 }
 
 /**
- * Draws the logo into an RGBA buffer.
- * @param size   canvas size in px (square)
- * @param logo   logo width as a fraction of the canvas
- * @param bg     background RGB or null for transparent
+ * Renders "stickers": rounded squares with an ink outline and a hard drop
+ * shadow, each with its own center, size, rotation and color. Stickers are
+ * drawn in order, so list them top-to-bottom for shadows to overlap nicely.
  */
-function drawLogo(size, logo, bg) {
-  const buf = Buffer.alloc(size * size * 4);
-  const L = logo * size; // logo extent
-  const gap = L * 0.06;
-  const side = (L - gap) / 2;
-  const border = side * 0.11;
-  const radius = side * 0.26;
-  const shadow = side * 0.1;
-  const angle = (-8 * Math.PI) / 180;
-  const cos = Math.cos(angle);
-  const sin = Math.sin(angle);
-  const c = size / 2;
-  const offs = side / 2 + gap / 2;
-  const centers = [
-    [-offs, -offs],
-    [offs, -offs],
-    [-offs, offs],
-    [offs, offs],
-  ];
-
-  // Layers back to front: hard shadows, ink outlines, colored faces.
+function renderStickers(w, h, bg, stickers) {
+  const buf = Buffer.alloc(w * h * 4);
   const layers = [];
-  for (const [x, y] of centers)
-    layers.push({ x, y, dy: shadow, half: side / 2, r: radius, col: INK });
-  for (const [x, y] of centers) layers.push({ x, y, dy: 0, half: side / 2, r: radius, col: INK });
-  centers.forEach(([x, y], i) =>
-    layers.push({ x, y, dy: 0, half: side / 2 - border, r: radius - border, col: SQUARES[i] }),
-  );
+  for (const st of stickers) {
+    const a = (st.angle * Math.PI) / 180;
+    const base = { cx: st.cx, cy: st.cy, cos: Math.cos(a), sin: Math.sin(a) };
+    const half = st.side / 2;
+    const border = st.side * 0.11;
+    const radius = st.side * 0.26;
+    layers.push(
+      { ...base, dy: st.side * 0.1, half, r: radius, col: INK }, // shadow
+      { ...base, dy: 0, half, r: radius, col: INK }, // outline
+      { ...base, dy: 0, half: half - border, r: radius - border, col: st.color }, // face
+    );
+  }
+  for (const l of layers) l.reach = l.half * 1.5 + 2; // bounding radius (skip far pixels)
 
-  for (let py = 0; py < size; py++) {
-    for (let px = 0; px < size; px++) {
+  for (let py = 0; py < h; py++) {
+    for (let px = 0; px < w; px++) {
       let [r, g, b] = bg ?? [0, 0, 0];
       let a = bg ? 1 : 0;
       for (const ly of layers) {
-        // Shadow drops straight down in screen space; the logo is rotated.
-        const sx = px + 0.5 - c;
-        const sy = py + 0.5 - c - ly.dy;
-        const lx = cos * sx + sin * sy - ly.x;
-        const lyy = -sin * sx + cos * sy - ly.y;
-        const d = sdRoundBox(lx, lyy, ly.half, ly.r);
-        const cov = Math.min(1, Math.max(0, 0.5 - d));
+        const sx = px + 0.5 - ly.cx;
+        const sy = py + 0.5 - ly.cy - ly.dy; // shadow drops straight down
+        if (Math.abs(sx) > ly.reach || Math.abs(sy) > ly.reach) continue;
+        const lx = ly.cos * sx + ly.sin * sy;
+        const lyy = -ly.sin * sx + ly.cos * sy;
+        const cov = Math.min(1, Math.max(0, 0.5 - sdRoundBox(lx, lyy, ly.half, ly.r)));
         if (cov <= 0) continue;
-        // "over" compositing
-        const na = cov + a * (1 - cov);
+        const na = cov + a * (1 - cov); // "over" compositing
         r = (ly.col[0] * cov + r * a * (1 - cov)) / na;
         g = (ly.col[1] * cov + g * a * (1 - cov)) / na;
         b = (ly.col[2] * cov + b * a * (1 - cov)) / na;
         a = na;
       }
-      const i = (py * size + px) * 4;
+      const i = (py * w + px) * 4;
       buf[i] = Math.round(r);
       buf[i + 1] = Math.round(g);
       buf[i + 2] = Math.round(b);
       buf[i + 3] = Math.round(a * 255);
     }
   }
-  return encodePNG(size, size, buf);
+  return encodePNG(w, h, buf);
+}
+
+/** The four-square logo, tilted -8°, centered at (cx, cy) with the given width. */
+function logoStickers(cx, cy, width) {
+  const gap = width * 0.06;
+  const side = (width - gap) / 2;
+  const offs = side / 2 + gap / 2;
+  const a = (-8 * Math.PI) / 180;
+  return [
+    [-offs, -offs],
+    [offs, -offs],
+    [-offs, offs],
+    [offs, offs],
+  ].map(([x, y], i) => ({
+    cx: cx + Math.cos(a) * x - Math.sin(a) * y,
+    cy: cy + Math.sin(a) * x + Math.cos(a) * y,
+    side,
+    angle: -8,
+    color: SQUARES[i],
+  }));
+}
+
+/** App icon / splash: just the logo, centered. */
+function drawLogo(size, logo, bg) {
+  return renderStickers(size, size, bg, logoStickers(size / 2, size / 2, logo * size));
+}
+
+/** Play Store feature graphic (1024 × 500): the logo among loose stickers. */
+function drawFeatureGraphic() {
+  const [blue, yellow, mint, pink] = SQUARES;
+  const loose = [
+    { cx: 95, cy: 110, side: 92, angle: 14, color: yellow },
+    { cx: 290, cy: 78, side: 58, angle: -18, color: mint },
+    { cx: 960, cy: 70, side: 52, angle: 24, color: blue },
+    { cx: 805, cy: 125, side: 118, angle: 9, color: pink },
+    { cx: 215, cy: 330, side: 120, angle: -10, color: blue },
+    { cx: 945, cy: 330, side: 96, angle: -14, color: mint },
+    { cx: 735, cy: 425, side: 66, angle: 16, color: yellow },
+    { cx: 70, cy: 410, side: 64, angle: 22, color: pink },
+  ];
+  return renderStickers(1024, 500, BG, [...loose, ...logoStickers(512, 238, 290)]);
 }
 
 // ---------- WAV synthesis ----------
@@ -210,5 +236,6 @@ write('assets/icon.png', drawLogo(1024, 0.62, BG));
 write('assets/adaptive-icon.png', drawLogo(1024, 0.42, null));
 write('assets/splash-icon.png', drawLogo(512, 0.9, null));
 write('store/play-icon-512.png', drawLogo(512, 0.62, BG));
+write('store/feature-graphic-1024x500.png', drawFeatureGraphic());
 for (const [name, samples] of Object.entries(SOUNDS))
   write(`assets/sounds/${name}.wav`, encodeWAV(samples));

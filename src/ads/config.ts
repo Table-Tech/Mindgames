@@ -3,7 +3,13 @@ import { Platform } from 'react-native';
 // Master switch for advertising. When off, no ad UI is shown and the
 // "Remove ads" purchase is hidden (selling ad removal without ads would be
 // misleading).
-export const ADS_ENABLED = true;
+//
+// v1 ships without ads. To turn them on (see README → AdMob):
+//   1. set this to true
+//   2. remove "react-native-google-mobile-ads" from expo.autolinking.exclude in package.json
+//   3. add the plugin config from docs/admob-plugin.json back to app.json "plugins"
+//      (with your real AdMob app IDs), then make a new build
+export const ADS_ENABLED = false;
 
 export type AdKind = 'banner' | 'interstitial';
 

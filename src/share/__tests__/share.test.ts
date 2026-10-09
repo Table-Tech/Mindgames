@@ -69,7 +69,7 @@ describe('buildShareText', () => {
     });
     expect(text).toBe(
       [
-        '🔤 Puzzaro · Daily Wordle 2/6',
+        '🔤 Puzzaro · Daily Word Guess 2/6',
         '📅 Fri 9 Oct',
         '',
         '🟦🟨⬛⬛🟦',

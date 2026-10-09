@@ -1,0 +1,22 @@
+# EAS uploads the project using this file instead of .gitignore.
+# Same as .gitignore, except the Firebase config files ARE uploaded: the
+# native build needs them. They stay out of git.
+
+node_modules/
+.expo/
+dist/
+web-build/
+*.log
+.DS_Store
+*.orig.*
+*.jks
+*.p8
+*.p12
+*.key
+*.mobileprovision
+ios/
+android/
+.env
+.env.local
+coverage/
+.jest-cache/

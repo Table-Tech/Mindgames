@@ -70,17 +70,17 @@ Legenda: `[x]` = gedaan / bestaat · `[ ]` = nog te doen.
 ### A. Blokkers voor beide stores 🔴
 
 **Beslissingen 👤**
-- [ ] 🔴👤 **Nieuwe naam voor het woordspel** ("Wordle" is een handelsmerk van The New York Times). Daarna één regel aanpassen in `src/games/wordle/name.ts`, en `[WORD GAME NAME]` invullen in `docs/store-listing.md`.
+- [x] Woordspel heet **"Word Guess"** (niet "Wordle", handelsmerk van The New York Times); aanpassen kan in `src/games/wordle/name.ts`
 - [ ] 🔴👤 Checken of de naam "Puzzaro" vrij is in beide stores (en als merk)
-- [x] v1 komt **met advertenties** (AdMob ingebouwd, zie sectie D)
+- [x] **v1 (Play Store) komt zonder advertenties en aankopen**: `ADS_ENABLED = false`, en de AdMob-SDK zit niet in de build (`expo.autolinking.exclude`, plugin-config bewaard in `docs/admob-plugin.json`). AdMob is wel volledig ingebouwd voor een latere update (sectie D).
 - [x] **iPad wordt ondersteund**
 
 **Privacy en juridisch 👤**
-- [ ] 🔴👤 Privacybeleid afmaken (placeholders invullen) en online zetten op een publieke URL
+- [ ] 🔴👤 Privacybeleid afmaken en online zetten (concept klopt met v1: geen ads/aankopen; nog in te vullen: naam, adres/land, Firestore-regio, e-mail, website)
 - [ ] 🔴👤 Support-URL of -e-mailadres (Apple verplicht een support-URL)
 - [ ] 🔴👤 Nieuwe Firestore-rules deployen (eigenaars mogen hun eigen scores nu verwijderen; nodig voor "Clear all data"): `firebase deploy --only firestore:rules`
 
-**Aankopen ("Remove ads") 👤**
+**Aankopen ("Remove ads") 👤** — pas nodig samen met ads, niet voor v1
 - [ ] 🔴👤 Product `remove_ads` (niet-verbruikbaar) in App Store Connect én Play Console
 - [ ] 🔴👤 In RevenueCat: entitlement `no_ads`, een "current" offering met dat product, beide apps gekoppeld
 - [ ] 🔴👤 RevenueCat-sleutels als EAS-environment-variables voor de production-build
@@ -89,7 +89,7 @@ Legenda: `[x]` = gedaan / bestaat · `[ ]` = nog te doen.
 
 **Firebase productie 👤**
 - [ ] 🔴👤 Productieproject controleren: anonieme login aan, rules gedeployd
-- [ ] 🔴👤 `google-services.json` en `GoogleService-Info.plist` als EAS-secret-bestanden voor cloud-builds
+- [x] `.easignore` zorgt dat EAS-cloud-builds `google-services.json` en `GoogleService-Info.plist` meekrijgen (ze blijven buiten git)
 
 **Build en submit 👤**
 - [ ] 🔴👤 Production-build per platform: `eas build --profile production --platform ios|android`
@@ -122,10 +122,11 @@ Legenda: `[x]` = gedaan / bestaat · `[ ]` = nog te doen.
 - [ ] 🟠👤 Data safety-formulier invullen
 - [ ] 🟠👤 Contentclassificatie (IARC) en doelgroep (13+ of 18+, om het Families-beleid te vermijden)
 - [ ] 🟠👤 "Bevat advertenties" aanvinken
-- [ ] 🟠👤 Feature graphic 1024×500 (heeft het definitieve naam/logo-ontwerp nodig) en minimaal 2 telefoon-screenshots; het 512-icoon staat klaar in `store/play-icon-512.png`
+- [x] Feature graphic 1024×500 (`store/feature-graphic-1024x500.png`) en icoon 512 (`store/play-icon-512.png`)
+- [ ] 🟠👤 Minimaal 2 telefoon-screenshots
 - [ ] 🟠👤 Target SDK in de build controleren tegen de actuele Play-eis (Expo SDK 54 target API 36)
 
-### D. Advertenties (AdMob) 🔴/🟠
+### D. Advertenties (AdMob) — voor een update na v1 🟡
 - [x] `react-native-google-mobile-ads` geïnstalleerd en geconfigureerd (plugin in `app.json`)
 - [x] Banner (`src/ads/AdBanner.tsx`) en interstitial (`src/ads/interstitial.ts`)
 - [x] Test-ads in development

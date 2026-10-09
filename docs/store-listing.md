@@ -1,7 +1,7 @@
 # Store listing — draft texts
 
-> **Draft.** Replace `[WORD GAME NAME]` with the new name of the word game once it's chosen, and check
-> the character limits after editing. Don't use "Wordle" anywhere in the listing (NYT trademark).
+> **Draft.** Check the character limits after editing. Don't use "Wordle" anywhere in the listing
+> (NYT trademark); the word game is called "Word Guess".
 
 ## Shared
 
@@ -42,7 +42,7 @@ SUDOKU
 • Pencil notes, auto-notes, undo and hints
 • Three hearts — careful with those mistakes!
 
-[WORD GAME NAME]
+WORD GUESS
 • Guess the hidden five-letter word in six tries
 • Colors show which letters are right, misplaced or not in the word
 • Optional hard mode for word-game veterans
@@ -67,7 +67,7 @@ Bright, bold and satisfying to play. Grab your daily three!
 
 1. Home — "Your daily three" with the three game cards
 2. Sudoku mid-game with notes and the number pad
-3. [WORD GAME NAME] with two colored guesses
+3. Word Guess with two colored guesses
 4. Mahjong board on the green table
 5. Win screen with confetti
 6. Stats — streak card and week view
@@ -76,7 +76,8 @@ Bright, bold and satisfying to play. Grab your daily three!
 Sizes: iPhone 6.9" (1320 × 2868) for the App Store; at least 2 phone screenshots for Play (16:9 or
 9:16, 320–3840 px). iPad is supported, so the App Store also needs iPad 13" (2064 × 2752) screenshots.
 
-## Still to make
+## Artwork
 
-- Play feature graphic, 1024 × 500 (`store/`) — needs the final name/logo lock-up
+- Play icon 512 × 512: `store/play-icon-512.png`
+- Play feature graphic 1024 × 500: `store/feature-graphic-1024x500.png`
 - Optional: App Store preview video / Play promo video
