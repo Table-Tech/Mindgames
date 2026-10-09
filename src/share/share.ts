@@ -1,4 +1,5 @@
-import { Share } from 'react-native';
+import { Platform, Share } from 'react-native';
+import * as Sharing from 'expo-sharing';
 import type { GameId } from '@/core/game';
 import { capitalize, formatClock } from '@/core/format';
 import type { Guess } from '@/games/wordle/types';
@@ -142,13 +143,35 @@ export function buildShareText(r: ResultShare): string {
   return format(r);
 }
 
-export async function shareResult(r: ResultShare): Promise<void> {
+/** Adds the current daily streak to a result (daily games only). */
+export async function withStreak(r: ResultShare): Promise<ResultShare> {
+  if (r.streak != null || !r.dayLabel) return r;
+  const streak = computeStats(await getRecords(), r.game).currentStreak;
+  return { ...r, streak };
+}
+
+/**
+ * Opens the share sheet. With an image (the rendered ShareCard), iOS shares
+ * the image plus the text; Android's share intent here takes one or the
+ * other, so it shares the image. Without an image, the text is shared.
+ */
+export async function shareResult(r: ResultShare, imageUri?: string | null): Promise<void> {
+  const full = await withStreak(r).catch(() => r);
+  const message = buildShareText(full);
   try {
-    let streak = r.streak;
-    if (streak == null && r.dayLabel) {
-      streak = computeStats(await getRecords(), r.game).currentStreak;
+    if (imageUri && Platform.OS === 'ios') {
+      await Share.share({ message, url: imageUri });
+      return;
     }
-    await Share.share({ message: buildShareText({ ...r, streak }) });
+    if (imageUri && (await Sharing.isAvailableAsync())) {
+      await Sharing.shareAsync(imageUri, {
+        mimeType: 'image/png',
+        UTI: 'public.png',
+        dialogTitle: 'Share your result',
+      });
+      return;
+    }
+    await Share.share({ message });
   } catch {
     // user dismissed
   }

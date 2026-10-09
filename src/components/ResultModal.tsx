@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { Modal, Pressable, StyleSheet, Text, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '@/theme/ThemeProvider';
@@ -7,7 +7,9 @@ import { Body, Card, Chunky, Display, Eyebrow, OUTLINE } from '@/ui/kit';
 import { letterColors } from '@/games/wordle/WordleGrid';
 import type { Guess } from '@/games/wordle/types';
 import { Confetti } from './Confetti';
-import { shareResult, type ResultShare } from '@/share/share';
+import { captureRef } from 'react-native-view-shot';
+import { shareResult, withStreak, type ResultShare } from '@/share/share';
+import { CARD_HEIGHT, CARD_WIDTH, ShareCard } from '@/share/ShareCard';
 
 interface Stat {
   label: string;
@@ -50,6 +52,37 @@ export function ResultModal({
   onDismiss,
 }: Props) {
   const { colors } = useTheme();
+  const cardRef = useRef<View>(null);
+  const [card, setCard] = useState<ResultShare | null>(null);
+  const [sharing, setSharing] = useState(false);
+
+  // Prepare the share image (with the streak filled in) while the modal is open.
+  useEffect(() => {
+    if (!visible || !share) return;
+    let live = true;
+    withStreak(share)
+      .catch(() => share)
+      .then(r => live && setCard(r));
+    return () => {
+      live = false;
+    };
+  }, [visible, share]);
+
+  const onShare = async () => {
+    if (!share || sharing) return;
+    setSharing(true);
+    try {
+      const uri = await captureRef(cardRef, {
+        format: 'png',
+        width: 1080,
+        height: 1350,
+        result: 'tmpfile',
+      }).catch(() => null);
+      await shareResult(card ?? share, uri);
+    } finally {
+      setSharing(false);
+    }
+  };
   const cardColor = won ? (accent ?? colors.sudoku) : colors.surface;
   // Blue is the only signature color dark enough for white text.
   const onCard = won && cardColor === colors.sudoku ? '#FFFFFF' : won ? INK : colors.text;
@@ -57,6 +90,14 @@ export function ResultModal({
   return (
     <Modal transparent visible={visible} animationType="fade" onRequestClose={onDismiss}>
       <View style={styles.backdrop}>
+        {card && (
+          // Rendered off-screen only so it can be captured as an image.
+          <View style={styles.offscreen} pointerEvents="none">
+            <View ref={cardRef} collapsable={false}>
+              <ShareCard result={card} />
+            </View>
+          </View>
+        )}
         {won && (
           <Confetti
             colors={[colors.sudoku, colors.wordle, colors.mahjong, colors.pink, '#FFFFFF']}
@@ -134,7 +175,11 @@ export function ResultModal({
               <Text style={styles.bigBtnText}>{primaryLabel}</Text>
             </Chunky>
             {share && (
-              <Chunky onPress={() => shareResult(share)} contentStyle={[styles.bigBtn, styles.row]}>
+              <Chunky
+                onPress={onShare}
+                disabled={sharing}
+                contentStyle={[styles.bigBtn, styles.row]}
+              >
                 <Ionicons name="share-outline" size={18} color={colors.text} />
                 <Text style={[styles.bigBtnText, { color: colors.text, fontSize: 17 }]}>
                   Share result
@@ -154,6 +199,13 @@ export function ResultModal({
 }
 
 const styles = StyleSheet.create({
+  offscreen: {
+    position: 'absolute',
+    left: -CARD_WIDTH * 3,
+    top: 0,
+    width: CARD_WIDTH,
+    height: CARD_HEIGHT,
+  },
   backdrop: {
     flex: 1,
     backgroundColor: 'rgba(29,26,51,0.6)',
