@@ -13,6 +13,8 @@ interface Props {
   selected: number | null;
   wrong: Set<number>;
   hidden?: boolean;
+  /** When false, wrong entries look like normal entries. */
+  showMistakes?: boolean;
   onSelect: (index: number) => void;
 }
 
@@ -22,7 +24,16 @@ const RADIUS = 16;
 
 // The board is drawn as nine 3x3 boxes sitting in an ink frame, so the thick
 // box separators are just the gaps between boxes.
-export function SudokuBoard({ board, given, notes, selected, wrong, hidden, onSelect }: Props) {
+export function SudokuBoard({
+  board,
+  given,
+  notes,
+  selected,
+  wrong,
+  hidden,
+  showMistakes = true,
+  onSelect,
+}: Props) {
   const { colors } = useTheme();
   const selectedVal = selected != null ? board[selected] : 0;
   const selRow = selected != null ? Math.floor(selected / 9) : -1;
@@ -38,7 +49,7 @@ export function SudokuBoard({ board, given, notes, selected, wrong, hidden, onSe
       !isSelected &&
       (r === selRow || c === selCol || Math.floor(r / 3) * 3 + Math.floor(c / 3) === selBox);
     const sameNumber = !isSelected && val !== 0 && val === selectedVal;
-    const isWrong = wrong.has(i);
+    const isWrong = showMistakes && wrong.has(i);
 
     let bg = colors.given;
     if (inPeer) bg = colors.highlight;

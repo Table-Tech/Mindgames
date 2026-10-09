@@ -23,7 +23,7 @@ service cloud.firestore {
       allow read: if isSignedIn();
       allow create: if isOwner(uid) && validScore();
       allow update: if isOwner(uid) && validScore();
-      allow delete: if false;
+      allow delete: if isOwner(uid);
     }
 
     match /users/{uid} {

@@ -1,5 +1,6 @@
 import * as Notifications from 'expo-notifications';
 import { Platform } from 'react-native';
+import { WORD_GAME_NAME } from '@/games/wordle/name';
 
 // Schedules / cancels a single local notification that fires every day at the
 // user's chosen time as a "new daily challenge is available" nudge. No remote
@@ -34,7 +35,7 @@ export async function scheduleDailyReminder(hour: number, minute: number): Promi
     identifier: REMINDER_ID,
     content: {
       title: 'Today’s puzzles are ready',
-      body: 'Solve Sudoku, Wordle, and Mahjong before the day’s over.',
+      body: `Solve Sudoku, ${WORD_GAME_NAME}, and Mahjong before the day’s over.`,
       sound: true,
     },
     trigger: {

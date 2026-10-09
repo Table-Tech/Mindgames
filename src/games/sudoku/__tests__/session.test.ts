@@ -97,3 +97,14 @@ describe('sudoku session', () => {
     expect(tick(togglePause(game([0])), 1000).elapsedMs).toBe(0);
   });
 });
+
+describe('sudoku session options', () => {
+  it('keeps peer notes when auto-cleanup is off', () => {
+    const s = game([0, 1]);
+    const withNote = { ...s, notes: s.notes.map((n, i) => (i === 1 ? [5] : n)) };
+    const on = inputNumber(withNote, 0, 5, false)!.state;
+    const off = inputNumber(withNote, 0, 5, false, { autoCleanupNotes: false })!.state;
+    expect(on.notes[1]).toEqual([]);
+    expect(off.notes[1]).toEqual([5]);
+  });
+});

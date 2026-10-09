@@ -26,8 +26,15 @@ const API_KEY =
 
 const isConfigured = !!API_KEY && API_KEY.length > 0;
 
+// Without a key, development builds fake the purchase locally so the UI can be
+// exercised. Release builds never do: purchases are simply unavailable.
+const useLocalFallback = !isConfigured && __DEV__;
+const UNAVAILABLE = 'Purchases are not available right now. Please try again later.';
+
 interface EntitlementsContextValue {
   adsRemoved: boolean;
+  /** Localized store price, e.g. "€2,99"; null until known. */
+  removeAdsPrice: string | null;
   loading: boolean;
   purchasing: boolean;
   restoring: boolean;
@@ -37,6 +44,7 @@ interface EntitlementsContextValue {
 
 const Ctx = createContext<EntitlementsContextValue>({
   adsRemoved: false,
+  removeAdsPrice: null,
   loading: true,
   purchasing: false,
   restoring: false,
@@ -50,8 +58,20 @@ async function configureRevenueCat(): Promise<void> {
   Purchases.configure({ apiKey: API_KEY! });
 }
 
+async function findRemoveAdsPackage() {
+  const offerings = await Purchases.getOfferings();
+  return offerings.current?.availablePackages.find(p => p.product.identifier === PRODUCT_ID);
+}
+
+async function fetchPrice(): Promise<string | null> {
+  if (!isConfigured) return null;
+  const pkg = await findRemoveAdsPackage();
+  return pkg?.product.priceString ?? null;
+}
+
 async function fetchEntitlements(): Promise<{ adsRemoved: boolean }> {
   if (!isConfigured) {
+    if (!useLocalFallback) return { adsRemoved: false };
     const flag = (await getJSON<boolean>(LOCAL_KEY)) ?? false;
     return { adsRemoved: flag };
   }
@@ -65,17 +85,15 @@ async function purchaseProduct(): Promise<{
   cancelled?: boolean;
   error?: string;
 }> {
-  if (!isConfigured) {
+  if (useLocalFallback) {
     // Dev fallback: pretend the purchase succeeded so the UI flow can be
     // exercised end-to-end without a configured RevenueCat key.
     await setJSON(LOCAL_KEY, true);
     return { ok: true, adsRemoved: true };
   }
+  if (!isConfigured) return { ok: false, adsRemoved: false, error: UNAVAILABLE };
 
-  const offerings = await Purchases.getOfferings();
-  const pkg = offerings.current?.availablePackages.find(
-    p => p.product.identifier === PRODUCT_ID,
-  );
+  const pkg = await findRemoveAdsPackage();
   if (!pkg) {
     return {
       ok: false,
@@ -100,10 +118,11 @@ async function purchaseProduct(): Promise<{
 }
 
 async function restore(): Promise<{ ok: boolean; adsRemoved: boolean; error?: string }> {
-  if (!isConfigured) {
+  if (useLocalFallback) {
     const flag = (await getJSON<boolean>(LOCAL_KEY)) ?? false;
     return { ok: true, adsRemoved: flag };
   }
+  if (!isConfigured) return { ok: false, adsRemoved: false, error: UNAVAILABLE };
   try {
     const info = await Purchases.restorePurchases();
     return { ok: true, adsRemoved: !!info.entitlements.active[ENTITLEMENT_ID] };
@@ -118,6 +137,7 @@ async function restore(): Promise<{ ok: boolean; adsRemoved: boolean; error?: st
 
 export function EntitlementsProvider({ children }: { children: React.ReactNode }) {
   const [adsRemoved, setAdsRemoved] = useState(false);
+  const [removeAdsPrice, setRemoveAdsPrice] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [purchasing, setPurchasing] = useState(false);
   const [restoring, setRestoring] = useState(false);
@@ -128,6 +148,7 @@ export function EntitlementsProvider({ children }: { children: React.ReactNode }
         await configureRevenueCat();
         const e = await fetchEntitlements();
         setAdsRemoved(e.adsRemoved);
+        setRemoveAdsPrice(await fetchPrice());
       } catch {
         // Swallow on init — fall back to "no entitlement" rather than crash.
       } finally {
@@ -171,7 +192,15 @@ export function EntitlementsProvider({ children }: { children: React.ReactNode }
 
   return (
     <Ctx.Provider
-      value={{ adsRemoved, loading, purchasing, restoring, purchaseRemoveAds, restorePurchases }}
+      value={{
+        adsRemoved,
+        removeAdsPrice,
+        loading,
+        purchasing,
+        restoring,
+        purchaseRemoveAds,
+        restorePurchases,
+      }}
     >
       {children}
     </Ctx.Provider>

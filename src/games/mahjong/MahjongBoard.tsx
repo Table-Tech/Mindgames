@@ -8,6 +8,7 @@ import type { Tile } from './types';
 const TILE_W = 32;
 const TILE_H = 42;
 const EDGE = 4; // visible tile thickness under the face
+const TEXT_PRESENTATION = '\uFE0E';
 const Z_OFFSET_X = 4; // each layer shifts right
 const Z_OFFSET_Y = -5; // and up, giving a 3D look
 
@@ -75,7 +76,8 @@ export function MahjongBoard({ tiles, removed, selectedId, hintIds, onSelect }: 
             ]}
           >
             <Text style={{ fontSize: 22, color: '#1D1A33' }} allowFontScaling={false}>
-              {t.glyph}
+              {/* U+FE0E asks for the text glyph, not a color emoji (e.g. 🀄 on Android). */}
+              {t.glyph + TEXT_PRESENTATION}
             </Text>
             {/* Blocked tiles get a soft shade so the playable ones pop. */}
             {!free && <View pointerEvents="none" style={styles.shade} />}

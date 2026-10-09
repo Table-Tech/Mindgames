@@ -1,5 +1,5 @@
 import React from 'react';
-import { StyleSheet, Text, View } from 'react-native';
+import { StyleSheet, Text, useWindowDimensions, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '@/theme/ThemeProvider';
 import { fonts } from '@/theme/fonts';
@@ -21,6 +21,8 @@ interface Props {
 
 export function Keyboard({ letterStates, onKey, disabled }: Props) {
   const { colors } = useTheme();
+  // Shorter keys on small screens, but never below the 44pt touch minimum.
+  const keyHeight = useWindowDimensions().height < 720 ? 44 : 52;
   return (
     <View style={[styles.keyboard, { opacity: disabled ? 0.5 : 1 }]}>
       {ROWS.map((row, ri) => (
@@ -43,7 +45,7 @@ export function Keyboard({ letterStates, onKey, disabled }: Props) {
                 radius={10}
                 color={bg}
                 style={{ flex: wide ? 1.6 : 1, minWidth: 0 }}
-                contentStyle={styles.key}
+                contentStyle={[styles.key, { height: keyHeight }]}
               >
                 {k === 'BACK' ? (
                   <Ionicons name="backspace-outline" size={22} color={fg} />
@@ -67,6 +69,6 @@ export function Keyboard({ letterStates, onKey, disabled }: Props) {
 const styles = StyleSheet.create({
   keyboard: { gap: 7, alignSelf: 'stretch' },
   row: { flexDirection: 'row', justifyContent: 'center', gap: 5 },
-  key: { height: 52, alignItems: 'center', justifyContent: 'center' },
+  key: { alignItems: 'center', justifyContent: 'center' },
   keyText: { fontFamily: fonts.displaySemi },
 });

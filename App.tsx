@@ -2,13 +2,18 @@ import React, { useEffect } from 'react';
 import { StatusBar } from 'expo-status-bar';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { useFonts } from 'expo-font';
+import * as SplashScreen from 'expo-splash-screen';
 import { Fredoka_600SemiBold, Fredoka_700Bold } from '@expo-google-fonts/fredoka';
 import { Nunito_700Bold, Nunito_800ExtraBold } from '@expo-google-fonts/nunito';
 import { PreferencesProvider } from '@/prefs/PreferencesProvider';
 import { ThemeProvider, useTheme } from '@/theme/ThemeProvider';
 import { EntitlementsProvider } from '@/iap/EntitlementsProvider';
 import { RootNavigator } from '@/navigation/RootNavigator';
-import { cloudPreferencesSource, startCloudSync } from '@/cloud/cloudSave';
+import { ErrorBoundary } from '@/components/ErrorBoundary';
+import { cloudPreferencesSource, startCloudSync } from '@/cloud';
+
+// Keep the native splash up until fonts are ready, so there's no blank frame.
+SplashScreen.preventAutoHideAsync().catch(() => {});
 
 function ThemedStatusBar() {
   const { isDark } = useTheme();
@@ -25,8 +30,13 @@ export default function App() {
 
   useEffect(() => startCloudSync(), []);
 
+  const ready = fontsLoaded || !!fontError;
+  useEffect(() => {
+    if (ready) SplashScreen.hideAsync().catch(() => {});
+  }, [ready]);
+
   // Fall back to system fonts if loading fails rather than blocking the app.
-  if (!fontsLoaded && !fontError) return null;
+  if (!ready) return null;
 
   return (
     <SafeAreaProvider>
@@ -34,7 +44,9 @@ export default function App() {
         <ThemeProvider>
           <EntitlementsProvider>
             <ThemedStatusBar />
-            <RootNavigator />
+            <ErrorBoundary>
+              <RootNavigator />
+            </ErrorBoundary>
           </EntitlementsProvider>
         </ThemeProvider>
       </PreferencesProvider>

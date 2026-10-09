@@ -11,12 +11,18 @@
 //       { totals: { sudoku: {...}, wordle: {...}, mahjong: {...} } }
 
 import { getApp } from '@react-native-firebase/app';
-import { getAuth, signInAnonymously, onAuthStateChanged } from '@react-native-firebase/auth';
+import {
+  deleteUser,
+  getAuth,
+  onAuthStateChanged,
+  signInAnonymously,
+} from '@react-native-firebase/auth';
 import {
   getFirestore,
   collection,
   doc,
   setDoc,
+  deleteDoc,
   getDoc,
   getDocs,
   query,
@@ -175,4 +181,29 @@ export async function pullCloudSave(): Promise<CloudSavePayload | null> {
     totals: data.totals as CloudSavePayload['totals'],
     updatedAt: data.updatedAt?.toMillis?.() ?? null,
   };
+}
+
+// Erases everything this device stored in the cloud: the given leaderboard
+// scores, the /users/{uid} save and the anonymous account itself. A later
+// sync signs in again with a brand-new anonymous id.
+export async function deleteCloudData(scores: { game: GameId; date: string }[]): Promise<void> {
+  const user = getAuth().currentUser;
+  if (!user) return; // never signed in: nothing stored remotely
+  const db = getFirestore();
+  await Promise.all(
+    scores.map(s =>
+      deleteDoc(
+        doc(
+          collection(
+            doc(collection(doc(collection(db, 'leaderboards'), s.game), 'days'), s.date),
+            'scores',
+          ),
+          user.uid,
+        ),
+      ).catch(() => {}),
+    ),
+  );
+  await deleteDoc(doc(collection(db, 'users'), user.uid));
+  await deleteUser(user);
+  cachedUid = null;
 }

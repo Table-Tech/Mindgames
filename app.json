@@ -2,8 +2,9 @@
   "expo": {
     "name": "Puzzaro",
     "slug": "puzzaro",
-    "version": "0.1.0",
+    "version": "1.0.0",
     "orientation": "portrait",
+    "icon": "./assets/icon.png",
     "userInterfaceStyle": "automatic",
     "scheme": "puzzaro",
     "assetBundlePatterns": [
@@ -14,7 +15,7 @@
       "bundleIdentifier": "com.puzzaro.tabletech",
       "googleServicesFile": "./GoogleService-Info.plist",
       "infoPlist": {
-        "NSUserNotificationsUsageDescription": "Puzzaro sends an optional daily reminder when a new puzzle is available."
+        "ITSAppUsesNonExemptEncryption": false
       }
     },
     "android": {
@@ -22,17 +23,42 @@
       "googleServicesFile": "./google-services.json",
       "permissions": [
         "VIBRATE",
-        "RECEIVE_BOOT_COMPLETED",
-        "SCHEDULE_EXACT_ALARM",
+        "RECEIVE_BOOT_COMPLETED"
+      ],
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/adaptive-icon.png",
+        "backgroundColor": "#F3F0FF"
+      },
+      "blockedPermissions": [
         "android.permission.RECORD_AUDIO",
-        "android.permission.MODIFY_AUDIO_SETTINGS"
+        "android.permission.SCHEDULE_EXACT_ALARM",
+        "android.permission.USE_EXACT_ALARM"
       ]
     },
     "plugins": [
       "expo-notifications",
       "expo-asset",
-      "expo-audio",
+      [
+        "expo-audio",
+        {
+          "microphonePermission": false,
+          "recordAudioAndroid": false
+        }
+      ],
       "expo-font",
+      [
+        "expo-splash-screen",
+        {
+          "image": "./assets/splash-icon.png",
+          "imageWidth": 180,
+          "resizeMode": "contain",
+          "backgroundColor": "#F3F0FF",
+          "dark": {
+            "image": "./assets/splash-icon.png",
+            "backgroundColor": "#16132B"
+          }
+        }
+      ],
       "@react-native-firebase/app",
       "@react-native-firebase/auth",
       [

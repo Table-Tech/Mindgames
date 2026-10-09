@@ -3,6 +3,7 @@ import type { GameRepository } from '@/storage/repository';
 import { sudokuRepository } from './sudoku/persistence';
 import { wordleRepository } from './wordle/persistence';
 import { mahjongRepository } from './mahjong/persistence';
+import { WORD_GAME_NAME } from './wordle/name';
 
 export interface DailyStatus {
   done: boolean;
@@ -40,6 +41,6 @@ function progressFrom<T extends { outcome: string }>(repo: GameRepository<T>) {
 
 export const GAME_REGISTRY: GameDefinition[] = [
   { id: 'sudoku', label: 'Sudoku', loadProgress: progressFrom(sudokuRepository) },
-  { id: 'wordle', label: 'Wordle', loadProgress: progressFrom(wordleRepository) },
+  { id: 'wordle', label: WORD_GAME_NAME, loadProgress: progressFrom(wordleRepository) },
   { id: 'mahjong', label: 'Mahjong', loadProgress: progressFrom(mahjongRepository) },
 ];

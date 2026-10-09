@@ -26,6 +26,7 @@ import { NameInputModal } from '@/components/NameInputModal';
 import { Onboarding } from '@/components/Onboarding';
 import { WORDLE_ONBOARDING } from '@/onboarding/steps';
 import { useOnboarding } from '@/onboarding/useOnboarding';
+import { WORD_GAME_NAME } from '@/games/wordle/name';
 
 interface Props {
   mode: WordleMode;
@@ -113,7 +114,7 @@ export function WordleScreen({ mode }: Props) {
     >
       <View style={styles.body}>
         <ScreenHeader
-          title={mode.kind === 'daily' ? 'Daily Wordle' : 'Wordle'}
+          title={mode.kind === 'daily' ? `Daily ${WORD_GAME_NAME}` : WORD_GAME_NAME}
           subtitle={`Guess ${guessNo} of ${MAX_GUESSES} · ${formatClock(elapsed)}`}
           right={
             mode.kind === 'random' ? (

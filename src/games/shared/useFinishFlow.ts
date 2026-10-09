@@ -1,8 +1,7 @@
 import { useCallback, useRef, useState } from 'react';
-import { Alert } from 'react-native';
 import type { GameId, PlayModeKind } from '@/core/game';
 import { todayISO } from '@/core/date';
-import { maybeShowInterstitial } from '@/ads/interstitial';
+import { maybeShowInterstitial, showInterstitial } from '@/ads/interstitial';
 import { useEntitlements } from '@/iap/EntitlementsProvider';
 import { submitScore } from '@/leaderboard/leaderboard';
 import { recordFinish } from '@/stats/stats';
@@ -33,8 +32,7 @@ export function useFinishFlow(game: GameId, mode: PlayModeKind) {
 
   const finish = useCallback(
     async (r: FinishResult) => {
-      const showAd = await maybeShowInterstitial(adsRemoved);
-      if (showAd) Alert.alert('Ad', '(Interstitial would show here)');
+      if (await maybeShowInterstitial(adsRemoved)) await showInterstitial();
 
       await recordFinish({
         game,

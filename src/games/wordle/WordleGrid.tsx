@@ -1,5 +1,5 @@
 import React from 'react';
-import { StyleSheet, Text, View } from 'react-native';
+import { StyleSheet, Text, useWindowDimensions, View } from 'react-native';
 import { useTheme } from '@/theme/ThemeProvider';
 import { fonts } from '@/theme/fonts';
 import type { ThemeColors } from '@/theme/colors';
@@ -12,8 +12,20 @@ interface Props {
   shakeRow?: boolean;
 }
 
+const GAP = 7;
+
+// Fits six rows in roughly half the screen height so the keyboard always fits,
+// including on small phones like the iPhone SE.
+function useTileSize() {
+  const { width, height } = useWindowDimensions();
+  const byWidth = (width - 32 - GAP * (WORD_LENGTH - 1)) / WORD_LENGTH;
+  const byHeight = (height * 0.46 - GAP * (MAX_GUESSES - 1)) / MAX_GUESSES;
+  return Math.round(Math.max(38, Math.min(62, byWidth, byHeight)));
+}
+
 export function WordleGrid({ guesses, current }: Props) {
   const { colors } = useTheme();
+  const size = useTileSize();
   const rows: { letters: string[]; states: LetterState[] }[] = [];
 
   for (const g of guesses) {
@@ -45,13 +57,18 @@ export function WordleGrid({ guesses, current }: Props) {
                 style={[
                   styles.tile,
                   {
+                    width: size,
+                    height: size,
                     backgroundColor: t.bg,
                     borderColor: t.border,
                     borderBottomWidth: 2.5 + t.lift,
                   },
                 ]}
               >
-                <Text allowFontScaling={false} style={[styles.letter, { color: t.fg }]}>
+                <Text
+                  allowFontScaling={false}
+                  style={[styles.letter, { color: t.fg, fontSize: Math.round(size * 0.52) }]}
+                >
                   {ch.trim()}
                 </Text>
               </View>
@@ -85,15 +102,13 @@ function tileStyle(state: LetterState, filled: boolean, colors: ThemeColors) {
 }
 
 const styles = StyleSheet.create({
-  grid: { gap: 7, alignSelf: 'center' },
-  row: { flexDirection: 'row', gap: 7 },
+  grid: { gap: GAP, alignSelf: 'center' },
+  row: { flexDirection: 'row', gap: GAP },
   tile: {
-    width: 58,
-    height: 58,
     borderWidth: 2.5,
     borderRadius: 12,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  letter: { fontFamily: fonts.display, fontSize: 30 },
+  letter: { fontFamily: fonts.display },
 });

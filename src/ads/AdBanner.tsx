@@ -3,6 +3,7 @@ import { Text, View, StyleSheet } from 'react-native';
 import { useTheme } from '@/theme/ThemeProvider';
 import { fonts } from '@/theme/fonts';
 import { useEntitlements } from '@/iap/EntitlementsProvider';
+import { ADS_ENABLED } from './config';
 
 // TODO(ads): replace this stub with `react-native-google-mobile-ads`.
 //   yarn add react-native-google-mobile-ads
@@ -12,7 +13,7 @@ import { useEntitlements } from '@/iap/EntitlementsProvider';
 export function AdBanner() {
   const { colors } = useTheme();
   const { adsRemoved } = useEntitlements();
-  if (adsRemoved) return null;
+  if (!ADS_ENABLED || adsRemoved) return null;
   return (
     <View style={[styles.banner, { backgroundColor: colors.surfaceAlt, borderColor: colors.ink }]}>
       <Text style={{ fontFamily: fonts.body, color: colors.textMuted, fontSize: 12 }}>

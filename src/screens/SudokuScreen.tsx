@@ -34,6 +34,7 @@ import { useFinishFlow } from '@/games/shared/useFinishFlow';
 import { useUndoHistory } from '@/games/shared/useUndoHistory';
 import { AdBanner } from '@/ads/AdBanner';
 import { useFeedback } from '@/feedback/useFeedback';
+import { usePreferences } from '@/prefs/PreferencesProvider';
 import { ResultModal } from '@/components/ResultModal';
 import { NameInputModal } from '@/components/NameInputModal';
 import { Onboarding } from '@/components/Onboarding';
@@ -47,6 +48,8 @@ interface Props {
 export function SudokuScreen({ mode: navMode }: Props) {
   const { colors } = useTheme();
   const fb = useFeedback();
+  const { prefs } = usePreferences();
+  const inputOpts = { autoCleanupNotes: prefs.sudokuAutoCleanupNotes };
   const navigation = useNavigation();
   const onboarding = useOnboarding('sudoku');
   const finishFlow = useFinishFlow('sudoku', navMode.kind);
@@ -223,6 +226,7 @@ export function SudokuScreen({ mode: navMode }: Props) {
             selected={selected}
             wrong={wrongSet}
             hidden={state.paused}
+            showMistakes={prefs.sudokuHighlightMistakes}
             onSelect={i => {
               if (state.paused || state.outcome !== 'playing') return;
               setSelected(i);
@@ -277,7 +281,7 @@ export function SudokuScreen({ mode: navMode }: Props) {
             label="Hint"
             badge={state.hintsLeft}
             disabled={state.hintsLeft === 0}
-            onPress={() => apply(applyHint(state, selected))}
+            onPress={() => apply(applyHint(state, selected, inputOpts))}
           />
           <ToolButton
             icon="sparkles-outline"
@@ -292,7 +296,7 @@ export function SudokuScreen({ mode: navMode }: Props) {
             return (
               <Chunky
                 key={n}
-                onPress={() => apply(inputNumber(state, selected, n, notesMode))}
+                onPress={() => apply(inputNumber(state, selected, n, notesMode, inputOpts))}
                 disabled={left <= 0}
                 accessibilityLabel={`Enter ${n}`}
                 depth={3}

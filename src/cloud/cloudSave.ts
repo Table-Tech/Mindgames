@@ -1,13 +1,18 @@
 import { getJSON, setJSON } from '@/storage/storage';
 import { syncedDataChanged } from '@/core/events';
 import { getRecords, saveRecords, type FinishRecord } from '@/stats/stats';
-import { leaderboardScoreSubmitted } from '@/leaderboard/leaderboard';
+import { leaderboardScoreSubmitted, loadLeaderboard } from '@/leaderboard/leaderboard';
 import {
   cloudSyncedSubset,
   loadPreferences,
   type RemotePreferencesSource,
 } from '@/prefs/prefsStore';
-import { pullCloudSave, pushCloudSave, submitLeaderboardScore } from './firebase';
+import {
+  deleteCloudData as deleteRemote,
+  pullCloudSave,
+  pushCloudSave,
+  submitLeaderboardScore,
+} from './firebase';
 
 const LAST_SYNCED_KEY = 'cloud.lastSyncedAt';
 
@@ -161,4 +166,18 @@ export function startCloudSync(): () => void {
     offData();
     offScores();
   };
+}
+
+// Deletes this device's cloud copy (save + submitted daily scores + account).
+// Cancels any pending push first so the data isn't re-uploaded right away.
+export async function deleteCloudData(): Promise<void> {
+  if (pushTimer) {
+    clearTimeout(pushTimer);
+    pushTimer = null;
+  }
+  if (pendingPush) await pendingPush;
+  const scores = (await loadLeaderboard()).flatMap(e =>
+    e.game ? [{ game: e.game, date: e.date }] : [],
+  );
+  await deleteRemote(scores);
 }

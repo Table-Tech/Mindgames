@@ -10,6 +10,7 @@ import type { ThemeColors } from '@/theme/colors';
 import { OUTLINE } from '@/ui/kit';
 import type { RootStackParamList } from '@/navigation/types';
 import type { Difficulty } from './sudoku/types';
+import { WORD_GAME_NAME } from './wordle/name';
 
 // Only the ability to navigate is needed, not the whole navigation object.
 type Nav = Pick<NativeStackNavigationProp<RootStackParamList>, 'navigate'>;
@@ -51,7 +52,7 @@ export const GAME_CATALOG: GameCatalogEntry[] = [
   },
   {
     id: 'wordle',
-    label: 'Wordle',
+    label: WORD_GAME_NAME,
     colorKey: 'wordle',
     onColor: INK,
     DailyArt: WordleArt,

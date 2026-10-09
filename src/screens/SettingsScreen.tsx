@@ -1,13 +1,5 @@
 import React, { useCallback, useEffect, useState } from 'react';
-import {
-  Alert,
-  Pressable,
-  ScrollView,
-  StyleSheet,
-  Text,
-  TextInput,
-  View,
-} from 'react-native';
+import { Alert, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useTheme } from '@/theme/ThemeProvider';
 import { fonts } from '@/theme/fonts';
@@ -20,16 +12,17 @@ import {
   ensurePermission,
   scheduleDailyReminder,
 } from '@/notifications/dailyReminder';
-import { flushPush, fullSync, getLastSyncedAt } from '@/cloud/cloudSave';
+import { deleteCloudData, flushPush, fullSync, getLastSyncedAt } from '@/cloud';
+import { ADS_ENABLED } from '@/ads/config';
 import { clearAll } from '@/storage/storage';
 import { clearRecords } from '@/stats/stats';
 import { clearLeaderboard } from '@/leaderboard/leaderboard';
-import { syncedDataChanged } from '@/core/events';
 import { ActivityIndicator } from 'react-native';
+import { WORD_GAME_NAME } from '@/games/wordle/name';
 
 export function SettingsScreen() {
   const { colors } = useTheme();
-  const { adsRemoved, purchasing, restoring, purchaseRemoveAds, restorePurchases } =
+  const { adsRemoved, removeAdsPrice, purchasing, restoring, purchaseRemoveAds, restorePurchases } =
     useEntitlements();
   const { prefs, setPref, resetPrefs } = usePreferences();
   const [nameDraft, setNameDraft] = useState(prefs.playerName);
@@ -70,19 +63,29 @@ export function SettingsScreen() {
 
   const clearProgress = () => {
     Alert.alert(
-      'Clear all progress',
-      'This deletes all in-progress games, stats, leaderboards, and preferences on this device. Continue?',
+      'Clear all data',
+      'This deletes all games, stats, scores and preferences on this device and your cloud copy. This cannot be undone. Continue?',
       [
         { text: 'Cancel', style: 'cancel' },
         {
           text: 'Clear',
           style: 'destructive',
           onPress: async () => {
+            // Cloud first: it needs the local score list to know what to delete.
+            let cloudOk = true;
+            try {
+              await deleteCloudData();
+            } catch {
+              cloudOk = false;
+            }
             await clearAll();
             resetPrefs();
-            // Tell the cloud the user's snapshot is now empty.
-            syncedDataChanged.emit();
-            Alert.alert('Cleared', 'All local data has been removed.');
+            Alert.alert(
+              'Cleared',
+              cloudOk
+                ? 'All data has been removed from this device and the cloud.'
+                : 'Local data has been removed, but the cloud copy could not be reached. Try again when you are online.',
+            );
           },
         },
       ],
@@ -196,7 +199,7 @@ export function SettingsScreen() {
           </Group>
         </Section>
 
-        <Section title="Wordle">
+        <Section title={WORD_GAME_NAME}>
           <Group>
             <SwitchRow
               label="Hard mode"
@@ -267,53 +270,59 @@ export function SettingsScreen() {
           </Body>
         </Section>
 
-        <Card color={colors.sudoku} radius={24} depth={5} style={styles.adsCard}>
-          {adsRemoved ? (
-            <>
-              <Display style={{ fontSize: 22, color: '#FFFFFF' }}>Ads removed</Display>
-              <Body style={{ color: '#FFFFFF' }}>Thanks for the support!</Body>
-            </>
-          ) : (
-            <>
-              <Display style={{ fontSize: 22, color: '#FFFFFF' }}>Play without ads</Display>
-              <Body style={{ color: '#FFFFFF' }}>One purchase, every game, forever.</Body>
-              <Chunky
-                disabled={purchasing}
-                color={colors.wordle}
-                contentStyle={styles.bigBtn}
-                onPress={async () => {
-                  const r = await purchaseRemoveAds();
-                  if (r.ok) {
-                    Alert.alert('Thank you!', 'Ads have been removed.');
-                  } else if (!r.cancelled) {
-                    Alert.alert('Purchase failed', r.error ?? 'Please try again.');
-                  }
-                }}
-              >
-                {purchasing ? (
-                  <ActivityIndicator color={INK} />
-                ) : (
-                  <Text style={[styles.bigBtnText, { color: INK }]}>Remove ads · €2.99</Text>
-                )}
-              </Chunky>
-            </>
-          )}
-          <Pressable
-            disabled={restoring}
-            accessibilityRole="button"
-            onPress={async () => {
-              const r = await restorePurchases();
-              if (!r.ok) {
-                Alert.alert('Restore failed', r.error ?? 'Please try again.');
-              } else if (!adsRemoved) {
-                Alert.alert('Nothing to restore', 'No previous purchases were found.');
-              }
-            }}
-            style={[styles.linkRow, { opacity: restoring ? 0.5 : 1 }]}
-          >
-            <Text style={styles.restoreText}>{restoring ? 'Restoring…' : 'Restore purchases'}</Text>
-          </Pressable>
-        </Card>
+        {ADS_ENABLED && (
+          <Card color={colors.sudoku} radius={24} depth={5} style={styles.adsCard}>
+            {adsRemoved ? (
+              <>
+                <Display style={{ fontSize: 22, color: '#FFFFFF' }}>Ads removed</Display>
+                <Body style={{ color: '#FFFFFF' }}>Thanks for the support!</Body>
+              </>
+            ) : (
+              <>
+                <Display style={{ fontSize: 22, color: '#FFFFFF' }}>Play without ads</Display>
+                <Body style={{ color: '#FFFFFF' }}>One purchase, every game, forever.</Body>
+                <Chunky
+                  disabled={purchasing}
+                  color={colors.wordle}
+                  contentStyle={styles.bigBtn}
+                  onPress={async () => {
+                    const r = await purchaseRemoveAds();
+                    if (r.ok) {
+                      Alert.alert('Thank you!', 'Ads have been removed.');
+                    } else if (!r.cancelled) {
+                      Alert.alert('Purchase failed', r.error ?? 'Please try again.');
+                    }
+                  }}
+                >
+                  {purchasing ? (
+                    <ActivityIndicator color={INK} />
+                  ) : (
+                    <Text style={[styles.bigBtnText, { color: INK }]}>
+                      {removeAdsPrice ? `Remove ads · ${removeAdsPrice}` : 'Remove ads'}
+                    </Text>
+                  )}
+                </Chunky>
+              </>
+            )}
+            <Pressable
+              disabled={restoring}
+              accessibilityRole="button"
+              onPress={async () => {
+                const r = await restorePurchases();
+                if (!r.ok) {
+                  Alert.alert('Restore failed', r.error ?? 'Please try again.');
+                } else if (!adsRemoved) {
+                  Alert.alert('Nothing to restore', 'No previous purchases were found.');
+                }
+              }}
+              style={[styles.linkRow, { opacity: restoring ? 0.5 : 1 }]}
+            >
+              <Text style={styles.restoreText}>
+                {restoring ? 'Restoring…' : 'Restore purchases'}
+              </Text>
+            </Pressable>
+          </Card>
+        )}
 
         <Section title="Data">
           <Group>

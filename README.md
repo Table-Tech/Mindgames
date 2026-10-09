@@ -103,23 +103,31 @@ use `eas build --profile development --platform ios` instead.
 - **Save & resume** for every game; daily state is keyed by date, practice mode by a single slot.
 - **Settings** with all of the above plus profile name, clear-stats, and clear-all-data actions.
 
-## Things you still need to wire up
+## Release status
 
-Stubs are in place so the swap is a single-file change. Each is documented at the top of its file.
+See [docs/RELEASE_CHECKLIST.md](docs/RELEASE_CHECKLIST.md) for everything that is done and what is
+left before submitting to the App Store and Play Store.
 
-### 1. AdMob (`react-native-google-mobile-ads`)
+## Integrations
 
-`src/ads/AdBanner.tsx` (banner slot) and `src/ads/interstitial.ts` (cadence: every 3 finishes).
-After install + EAS config:
+### 1. AdMob (`react-native-google-mobile-ads`) — not installed yet
 
-- Replace the `<View>` placeholder with `<BannerAd unitId={…} size={BannerAdSize.ADAPTIVE_BANNER}/>`.
-- Replace `maybeShowInterstitial`'s TODO with a real `InterstitialAd` load + show.
+Ads are switched off with `ADS_ENABLED = false` in `src/ads/config.ts`. While off, no banner, no
+interstitial and no "Remove ads" purchase are shown. To turn ads on:
 
-### 2. RevenueCat (`react-native-purchases`)
+- Install `react-native-google-mobile-ads`, add the AdMob app IDs, set up UMP consent (EEA/UK) and
+  iOS App Tracking Transparency.
+- Render `<BannerAd …/>` in `src/ads/AdBanner.tsx` and load/show an `InterstitialAd` in
+  `showInterstitial()` (`src/ads/interstitial.ts`; cadence: every 3 finished puzzles).
+- Set `ADS_ENABLED = true`.
 
-`src/iap/EntitlementsProvider.tsx` already mirrors the RevenueCat shape (`configure`,
-`getCustomerInfo`, `purchasePackage`, `restorePurchases`). Fill in the four TODO blocks with the
-real SDK calls. Product id is `remove_ads`, entitlement id is `no_ads`.
+### 2. RevenueCat (`react-native-purchases`) — wired
+
+`src/iap/EntitlementsProvider.tsx` uses the RevenueCat SDK. Product id `remove_ads`
+(non-consumable), entitlement id `no_ads`. Put the public SDK keys in `.env.local` (see
+`.env.example`) and as EAS environment variables for builds. Without a key, development builds fake
+the purchase locally; release builds report purchases as unavailable. The price shown in Settings
+comes from the store.
 
 ### 3. Firebase (`@react-native-firebase/*`) — wired
 
@@ -150,16 +158,15 @@ To set up a Firebase project from scratch:
 1. Create project at https://console.firebase.google.com.
 2. Authentication → Sign-in method → enable **Anonymous**.
 3. Firestore Database → create in `eur3 (europe-west)` production mode → paste `firestore.rules`.
-4. Add Android app with package `com.puzzaro.app` → download `google-services.json` to project root.
-5. Add iOS app with bundle id `com.puzzaro.app` → download `GoogleService-Info.plist` to project root.
+4. Add Android app with package `com.puzzaro.tabletech` → download `google-services.json` to project root.
+5. Add iOS app with bundle id `com.puzzaro.tabletech` → download `GoogleService-Info.plist` to project root.
 6. Rebuild the dev client (`npx expo prebuild --clean && expo run:android` / `expo run:ios`).
 
-### 4. Icons + splash + sound assets
+### 4. Icons, splash and sounds — generated
 
-- Drop `icon.png` (1024×1024), `adaptive-icon.png` (Android), `splash.png`, and `favicon.png`
-  into `assets/` and add the references back to `app.json`.
-- Drop short SFX into `assets/sounds/` (`tap.mp3`, `correct.mp3`, `wrong.mp3`, `win.mp3`,
-  `lose.mp3`) and uncomment the `require()` lines in `src/feedback/sounds.ts`.
+`node scripts/generate-assets.mjs` draws the app icon, Android adaptive icon, splash logo and the
+512 px Play Store icon (`store/`), and synthesizes the sound effects in `assets/sounds/`. Replace
+any of them with final artwork using the same file names.
 
 ### 5. EAS Build for distribution
 

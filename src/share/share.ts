@@ -2,6 +2,7 @@ import { Share } from 'react-native';
 import type { GameId } from '@/core/game';
 import { capitalize, formatTime } from '@/core/format';
 import type { Guess } from '@/games/wordle/types';
+import { WORD_GAME_NAME } from '@/games/wordle/name';
 
 // Squares match the in-app Wordle colors (blue = correct, yellow = present).
 const SQUARES: Record<string, string> = {
@@ -13,7 +14,7 @@ const SQUARES: Record<string, string> = {
 export function wordleShareText(guesses: Guess[], maxGuesses: number, dayLabel: string): string {
   const tries = guesses.length;
   const solved = guesses[guesses.length - 1]?.states.every(s => s === 'correct') ?? false;
-  const head = `Puzzaro Wordle ${dayLabel} ${solved ? tries : 'X'}/${maxGuesses}`;
+  const head = `Puzzaro ${WORD_GAME_NAME} ${dayLabel} ${solved ? tries : 'X'}/${maxGuesses}`;
   const grid = guesses.map(g => g.states.map(s => SQUARES[s] ?? '⬛').join('')).join('\n');
   return `${head}\n\n${grid}`;
 }

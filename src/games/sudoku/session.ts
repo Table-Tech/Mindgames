@@ -91,11 +91,19 @@ export function remainingOf(s: SudokuPersistedState, n: number): number {
   return 9 - s.board.filter((v, i) => v === n && v === s.solution[i]).length;
 }
 
+export interface InputOptions {
+  /** Remove a correctly placed digit from the notes of its row/column/box. */
+  autoCleanupNotes: boolean;
+}
+
+const DEFAULT_INPUT: InputOptions = { autoCleanupNotes: true };
+
 export function inputNumber(
   s: SudokuPersistedState,
   cell: number | null,
   n: number,
   notesMode: boolean,
+  opts: InputOptions = DEFAULT_INPUT,
 ): SudokuStep | null {
   if (!isActive(s) || cell == null || isLocked(s, cell)) return null;
 
@@ -128,7 +136,7 @@ export function inputNumber(
   }
 
   let notes = clearNotes(toNotes(s.notes), cell);
-  if (correct) notes = clearPeerNotes(notes, cell, placing);
+  if (correct && opts.autoCleanupNotes) notes = clearPeerNotes(notes, cell, placing);
 
   const lost = mistakes >= MAX_MISTAKES;
   const won = !lost && isComplete(board) && wrong.size === 0;
@@ -161,7 +169,11 @@ export function eraseCell(s: SudokuPersistedState, cell: number | null): SudokuS
   return { state: { ...s, notes: fromNotes(clearNotes(toNotes(s.notes), cell)) }, cues: [] };
 }
 
-export function applyHint(s: SudokuPersistedState, cell: number | null): SudokuStep | null {
+export function applyHint(
+  s: SudokuPersistedState,
+  cell: number | null,
+  opts: InputOptions = DEFAULT_INPUT,
+): SudokuStep | null {
   if (!isActive(s) || s.hintsLeft <= 0 || cell == null || isLocked(s, cell)) return null;
   if (s.board[cell] === s.solution[cell]) return null;
 
@@ -169,7 +181,8 @@ export function applyHint(s: SudokuPersistedState, cell: number | null): SudokuS
   const board = s.board.slice();
   board[cell] = digit;
   const wrong = s.wrong.filter(i => i !== cell);
-  const notes = clearPeerNotes(clearNotes(toNotes(s.notes), cell), cell, digit);
+  const cleared = clearNotes(toNotes(s.notes), cell);
+  const notes = opts.autoCleanupNotes ? clearPeerNotes(cleared, cell, digit) : cleared;
   const won = isComplete(board) && wrong.length === 0;
 
   return {
