@@ -16,6 +16,8 @@ import {
   isResumable,
   restoreSnapshot,
   selectTile,
+  STARTING_HINTS,
+  STARTING_SHUFFLES,
   shuffleRemaining as shuffleState,
   snapshotOf,
   takeHint,
@@ -247,6 +249,9 @@ export function MahjongScreen({ mode }: Props) {
           game: 'mahjong',
           timeMs: elapsed,
           score: state.score,
+          tilesLeft: remaining,
+          hintsUsed: STARTING_HINTS - state.hintsLeft,
+          shufflesUsed: STARTING_SHUFFLES - state.shufflesLeft,
           won: state.outcome === 'won',
           dayLabel: mode.kind === 'daily' ? todayISO() : undefined,
         }}

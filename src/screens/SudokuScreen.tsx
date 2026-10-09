@@ -359,6 +359,9 @@ export function SudokuScreen({ mode: navMode }: Props) {
           difficulty: state.difficulty,
           timeMs: state.elapsedMs,
           score: state.score,
+          mistakes: state.mistakes,
+          maxMistakes: MAX_MISTAKES,
+          hintsUsed: STARTING_HINTS - state.hintsLeft,
           won: state.outcome === 'won',
           dayLabel: navMode.kind === 'daily' ? todayISO() : undefined,
         }}
