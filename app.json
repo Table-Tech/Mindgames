@@ -2,12 +2,14 @@
   "expo": {
     "name": "Puzzaro",
     "slug": "puzzaro",
-    "version": "1.0.0",
+    "version": "1.1.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "automatic",
     "scheme": "puzzaro",
-    "assetBundlePatterns": ["**/*"],
+    "assetBundlePatterns": [
+      "**/*"
+    ],
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "com.puzzaro.tabletech",
@@ -20,7 +22,10 @@
     "android": {
       "package": "com.puzzaro.tabletech",
       "googleServicesFile": "./google-services.json",
-      "permissions": ["VIBRATE", "RECEIVE_BOOT_COMPLETED"],
+      "permissions": [
+        "VIBRATE",
+        "RECEIVE_BOOT_COMPLETED"
+      ],
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",
         "backgroundColor": "#F3F0FF"
@@ -28,8 +33,7 @@
       "blockedPermissions": [
         "android.permission.RECORD_AUDIO",
         "android.permission.SCHEDULE_EXACT_ALARM",
-        "android.permission.USE_EXACT_ALARM",
-        "com.google.android.gms.permission.AD_ID"
+        "android.permission.USE_EXACT_ALARM"
       ]
     },
     "plugins": [

@@ -127,21 +127,37 @@ Legenda: `[x]` = gedaan / bestaat · `[ ]` = nog te doen.
 - [ ] 🟠👤 Minimaal 2 telefoon-screenshots
 - [ ] 🟠👤 Target SDK in de build controleren tegen de actuele Play-eis (Expo SDK 54 target API 36)
 
-### D. Advertenties (AdMob) — voor een update na v1 🟡
-- [x] `react-native-google-mobile-ads` geïnstalleerd en geconfigureerd (plugin in `app.json`)
-- [x] Banner (`src/ads/AdBanner.tsx`) en interstitial (`src/ads/interstitial.ts`)
-- [x] Test-ads in development
-- [x] Toestemming (UMP) en iOS-trackingvraag, "Privacy choices" in Settings
-- [x] Privacybeleid-concept aangevuld met AdMob
-- [ ] 🔴👤 AdMob-account aanmaken, de app toevoegen voor iOS en Android, en een banner- en interstitial-ad-unit per platform aanmaken
-- [ ] 🔴👤 De **echte AdMob-app-ID's** in `app.json` zetten (`androidAppId` / `iosAppId` bij de `react-native-google-mobile-ads`-plugin). Er staan nu Google's voorbeeld-ID's: daarmee verdien je niets.
-- [ ] 🔴👤 De ad-unit-ID's als EAS-environment-variables: `EXPO_PUBLIC_ADMOB_BANNER_IOS`, `EXPO_PUBLIC_ADMOB_BANNER_ANDROID`, `EXPO_PUBLIC_ADMOB_INTERSTITIAL_IOS`, `EXPO_PUBLIC_ADMOB_INTERSTITIAL_ANDROID`
-- [ ] 🔴👤 In AdMob → **Privacy & messaging** een AVG-toestemmingsbericht (EER/VK) aanmaken en publiceren; zonder dat bericht toont UMP geen formulier
-- [ ] 🟠👤 Optioneel in dezelfde sectie een "IDFA explainer"-bericht voor iOS
-- [ ] 🟠👤 `app-ads.txt` op je ontwikkelaarswebsite (dezelfde site als in de store-listing)
-- [ ] 🟠 De volledige lijst SKAdNetwork-ID's van Google toevoegen aan `skAdNetworkItems` in `app.json` (nu staat alleen Google's eigen ID erin)
-- [ ] 🔴👤 Nieuwe development-build maken: AdMob is native code (`eas build --profile development` of `npx expo run:android`). In Expo Go zie je geen ads.
-- [ ] 🔴👤 Testen: toestemmingsformulier (zet je toestel op een EU-locatie of gebruik UMP-debug), ATT-vraag op iOS, banner, interstitial na 3 puzzels, en geen ads meer na "Remove ads"
+### D. Update 1.1.0: advertenties + "Remove ads" (branch `feature/ads`)
+**Klaar in de code**
+- [x] Ads aan (`ADS_ENABLED = true`), AdMob-SDK weer in de build, `AD_ID`-permissie toegestaan
+- [x] AdMob-app-ID's via `app.config.js` uit EAS-variabelen; productie-build zonder ID stopt met een fout
+- [x] Banner, interstitial (elke 3 puzzels), toestemming (UMP), iOS-trackingvraag, "Privacy choices"
+- [x] "Remove ads"-aankoop zichtbaar; prijs uit de store
+- [x] Privacybeleid met AdMob en RevenueCat (datum invullen bij release)
+- [x] Versie 1.1.0
+
+**Jij: AdMob**
+- [ ] 👤 Account op admob.google.com, app toevoegen (Android), ad units **Banner** en **Interstitial**
+- [ ] 👤 Privacy & messaging → AVG-bericht (EER/VK) maken en **publiceren**
+- [ ] 👤 `app-ads.txt` op https://techtable.nl/app-ads.txt (regel uit AdMob)
+
+**Jij: in-app aankoop**
+- [ ] 👤 Play Console: betalingsprofiel TechTable (bank, btw)
+- [ ] 👤 Play Console → Inkomsten genereren → In-app-producten: `remove_ads` (eenmalig), prijs, activeren
+- [ ] 👤 RevenueCat: project + Android-app, Google Play service-account-JSON, entitlement `no_ads`, current offering met `remove_ads`
+
+**EAS-environment-variables (production)** — geef ze mij, of zet ze zelf met `eas env:create`
+- [ ] 👤 `ADMOB_ANDROID_APP_ID` (ca-app-pub-…~…)
+- [ ] 👤 `EXPO_PUBLIC_ADMOB_BANNER_ANDROID` en `EXPO_PUBLIC_ADMOB_INTERSTITIAL_ANDROID` (ca-app-pub-…/…)
+- [ ] 👤 `EXPO_PUBLIC_REVENUECAT_ANDROID` (goog_…)
+- [ ] (later voor iOS: `ADMOB_IOS_APP_ID`, `EXPO_PUBLIC_ADMOB_*_IOS`, `EXPO_PUBLIC_REVENUECAT_IOS`, volledige SKAdNetwork-lijst)
+
+**Testen en uitbrengen**
+- [ ] Dev-build met ads (`eas build --profile development --platform android`): toestemmingsformulier, banner, interstitial na 3 puzzels, kopen + herstellen (testaccount in Play Console → Licentietests)
+- [ ] `feature/ads` mergen naar `main`, productie-build 1.1.0
+- [ ] 👤 Play Console bijwerken: Advertenties = **ja**; advertentie-ID = **ja (advertenties)**; Data safety: **Apparaat-ID's** ook voor advertenties en **gedeeld met AdMob**, plus **Aankoopgeschiedenis**; contentclassificatie opnieuw
+- [ ] 👤 Privacybeleid-datum invullen en pushen (GitHub Pages)
+- [ ] 👤 Interne test → productie
 
 ### E. Sterk aanbevolen voor v1 🟡
 - [ ] 🟡 Woordenlijst: één lijst van ~4.200 woorden voor antwoorden én pogingen. Splitsen in een kleine lijst bekende antwoordwoorden en een grote lijst geldige pogingen (10k+). 👤 Kies een bron met een geschikte licentie.

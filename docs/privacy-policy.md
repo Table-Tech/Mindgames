@@ -4,7 +4,7 @@ title: Puzzaro Privacy Policy
 
 # Puzzaro Privacy Policy
 
-_Last updated: 9 October 2026_
+_Last updated: [RELEASE DATE OF 1.1.0]_
 
 This policy explains what information the Puzzaro app ("the app", "we") collects, why, and what
 choices you have. The app is made by **TechTable** (the Netherlands, Chamber of Commerce no. 98067826),
@@ -25,9 +25,15 @@ which is the data controller for the purposes of the EU General Data Protection 
 | Leaderboard name you choose (optional, max. 16 characters) | Show your name next to your daily score | On your device and Google Cloud Firestore | Performance of the service |
 | Game statistics (games played, wins, times, scores, difficulty, guess counts) and onboarding progress | Show your statistics and streaks, and restore them on reinstall | On your device and Google Cloud Firestore | Performance of the service |
 | Daily score submissions (name, time, game, date) | Daily leaderboards | Google Cloud Firestore | Performance of the service |
+| Purchase information ("Remove ads" status, an anonymous purchase ID) | Unlock and restore your purchase | RevenueCat, Apple App Store / Google Play | Performance of a contract |
 | Settings (theme, sound, haptics, reminder time, game options) | Remember your preferences | Only on your device | Legitimate interest |
 
-The app shows no advertising and has no in-app purchases.
+**Advertising.** The app shows ads through
+Google AdMob. AdMob may collect your device's advertising identifier, IP address and information
+about ad interactions to show and measure ads. In the EEA, UK and Switzerland we ask for your consent
+before personalized ads are shown; on iOS we ask for permission to track through Apple's App
+Tracking Transparency. You can change your choice at any time in **Settings → Privacy choices**. Buying "Remove ads" turns ads off completely. See
+[Google's privacy policy](https://policies.google.com/privacy).
 
 We do **not** sell your personal data, and we don't use it for anything other than the purposes
 above.
@@ -43,7 +49,9 @@ We use these processors, each bound by their own data protection terms:
 
 - **Google Firebase** (Authentication, Cloud Firestore) — Google Ireland Ltd. / Google LLC.
   Data is stored in the European Union (Google Cloud multi-region `eur3`).
-- **Apple** and **Google** — app distribution.
+- **RevenueCat, Inc.** — purchase management.
+- **Apple** and **Google** — app distribution and payments.
+- **Google AdMob** — advertising.
 
 Some providers may process data outside the EU. Where that happens, transfers are covered by the
 European Commission's Standard Contractual Clauses or an adequacy decision.
@@ -77,22 +85,3 @@ let you know in the app.
 
 TechTable · [info@techtable.nl](mailto:info@techtable.nl) · [techtable.nl](https://techtable.nl)
 
-<!--
-WHEN ADS AND "REMOVE ADS" ARE TURNED ON, ADD BACK:
-
-In "What we collect and why":
-| Purchase information ("Remove ads" status, an anonymous purchase ID) | Unlock and restore your purchase | RevenueCat, Apple App Store / Google Play | Performance of a contract |
-
-Replace "The app shows no advertising and has no in-app purchases." with:
-**Advertising.** The app shows ads through
-Google AdMob. AdMob may collect your device's advertising identifier, IP address and information
-about ad interactions to show and measure ads. In the EEA, UK and Switzerland we ask for your consent
-before personalized ads are shown; on iOS we ask for permission to track through Apple's App
-Tracking Transparency. You can change your choice at any time in **Settings → Privacy choices**. Buying "Remove ads" turns ads off completely. See
-[Google's privacy policy](https://policies.google.com/privacy).
-
-In "Service providers":
-- **RevenueCat, Inc.** — purchase management.
-- **Apple** and **Google** — app distribution and payments.
-- **Google AdMob** — advertising.
--->

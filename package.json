@@ -55,12 +55,5 @@
     "prettier": "^3.3.3",
     "typescript": "~5.9.0"
   },
-  "private": true,
-  "expo": {
-    "autolinking": {
-      "exclude": [
-        "react-native-google-mobile-ads"
-      ]
-    }
-  }
+  "private": true
 }
