@@ -2,8 +2,7 @@
 
 _Last updated: [DATE]_
 
-> **Draft.** Fill in every `[PLACEHOLDER]`, check it against the final app (especially whether ads
-> are enabled), have it reviewed, and publish it at a public URL. Both the App Store and Google Play
+> **Draft.** Fill in every `[PLACEHOLDER]`, check it against the final app, have it reviewed, and publish it at a public URL. Both the App Store and Google Play
 > require that URL in the store listing.
 
 This policy explains what information the Puzzaro app ("the app", "we") collects, why, and what
@@ -28,11 +27,11 @@ data controller for the purposes of the EU General Data Protection Regulation (G
 | Purchase information ("Remove ads" status, an anonymous purchase ID) | Unlock and restore your purchase | RevenueCat, Apple App Store / Google Play | Performance of a contract |
 | Settings (theme, sound, haptics, reminder time, game options) | Remember your preferences | Only on your device | Legitimate interest |
 
-[IF ADS ARE ENABLED — otherwise delete this paragraph] **Advertising.** The app shows ads through
+**Advertising.** The app shows ads through
 Google AdMob. AdMob may collect your device's advertising identifier, IP address and information
 about ad interactions to show and measure ads. In the EEA, UK and Switzerland we ask for your consent
 before personalized ads are shown; on iOS we ask for permission to track through Apple's App
-Tracking Transparency. You can change your choice at any time in [WHERE IN THE APP]. See
+Tracking Transparency. You can change your choice at any time in **Settings → Privacy choices**. Buying "Remove ads" turns ads off completely. See
 [Google's privacy policy](https://policies.google.com/privacy).
 
 We do **not** sell your personal data, and we don't use it for anything other than the purposes
@@ -51,7 +50,7 @@ We use these processors, each bound by their own data protection terms:
   Data is stored in [FIRESTORE REGION, e.g. europe-west].
 - **RevenueCat, Inc.** — purchase management.
 - **Apple** and **Google** — app distribution and payments.
-- [IF ADS ARE ENABLED] **Google AdMob** — advertising.
+- **Google AdMob** — advertising.
 
 Some providers may process data outside the EU. Where that happens, transfers are covered by the
 European Commission's Standard Contractual Clauses or an adequacy decision.

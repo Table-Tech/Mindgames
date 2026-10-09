@@ -3,7 +3,18 @@ import { Alert, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useTheme } from '@/theme/ThemeProvider';
 import { fonts } from '@/theme/fonts';
-import { Body, Card, Chunky, Display, Eyebrow, OUTLINE, Segmented, TabBar, Toggle } from '@/ui/kit';
+import {
+  Body,
+  Card,
+  Chunky,
+  Display,
+  Eyebrow,
+  OUTLINE,
+  Segmented,
+  TabBar,
+  Toggle,
+  CONTENT_MAX_WIDTH,
+} from '@/ui/kit';
 import { useEntitlements } from '@/iap/EntitlementsProvider';
 import { usePreferences, type ThemeMode } from '@/prefs/PreferencesProvider';
 import { Ionicons } from '@expo/vector-icons';
@@ -14,6 +25,7 @@ import {
 } from '@/notifications/dailyReminder';
 import { deleteCloudData, flushPush, fullSync, getLastSyncedAt } from '@/cloud';
 import { ADS_ENABLED } from '@/ads/config';
+import { showPrivacyOptions, useAdsState } from '@/ads/admob';
 import { clearAll } from '@/storage/storage';
 import { clearRecords } from '@/stats/stats';
 import { clearLeaderboard } from '@/leaderboard/leaderboard';
@@ -25,6 +37,7 @@ export function SettingsScreen() {
   const { adsRemoved, removeAdsPrice, purchasing, restoring, purchaseRemoveAds, restorePurchases } =
     useEntitlements();
   const { prefs, setPref, resetPrefs } = usePreferences();
+  const { privacyOptionsRequired } = useAdsState();
   const [nameDraft, setNameDraft] = useState(prefs.playerName);
   const [syncBusy, setSyncBusy] = useState(false);
   const [lastSyncedAt, setLastSyncedAt] = useState<number | null>(null);
@@ -326,6 +339,14 @@ export function SettingsScreen() {
 
         <Section title="Data">
           <Group>
+            {privacyOptionsRequired && (
+              <LinkRow
+                label="Privacy choices"
+                onPress={() => {
+                  showPrivacyOptions().catch(() => {});
+                }}
+              />
+            )}
             <LinkRow label="Clear statistics" onPress={clearStats} />
             <LinkRow label="Clear all data" danger onPress={clearProgress} />
           </Group>
@@ -478,7 +499,14 @@ function TimeStepper({
 
 const styles = StyleSheet.create({
   container: { flex: 1 },
-  scroll: { padding: 16, paddingTop: 12, gap: 18 },
+  scroll: {
+    padding: 16,
+    paddingTop: 12,
+    gap: 18,
+    width: '100%',
+    maxWidth: CONTENT_MAX_WIDTH,
+    alignSelf: 'center',
+  },
   profile: { flexDirection: 'row', alignItems: 'center', gap: 14, padding: 14 },
   avatar: {
     width: 52,

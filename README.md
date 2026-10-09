@@ -110,16 +110,18 @@ left before submitting to the App Store and Play Store.
 
 ## Integrations
 
-### 1. AdMob (`react-native-google-mobile-ads`) — not installed yet
+### 1. AdMob (`react-native-google-mobile-ads`) — wired
 
-Ads are switched off with `ADS_ENABLED = false` in `src/ads/config.ts`. While off, no banner, no
-interstitial and no "Remove ads" purchase are shown. To turn ads on:
-
-- Install `react-native-google-mobile-ads`, add the AdMob app IDs, set up UMP consent (EEA/UK) and
-  iOS App Tracking Transparency.
-- Render `<BannerAd …/>` in `src/ads/AdBanner.tsx` and load/show an `InterstitialAd` in
-  `showInterstitial()` (`src/ads/interstitial.ts`; cadence: every 3 finished puzzles).
-- Set `ADS_ENABLED = true`.
+- `src/ads/admob.ts` gathers consent with Google UMP (EEA/UK), asks for iOS App Tracking
+  Transparency, then initializes the SDK. "Privacy choices" in Settings reopens the consent form.
+- `src/ads/AdBanner.tsx` renders an anchored adaptive banner; `src/ads/interstitial.ts` preloads an
+  interstitial and shows it after every 3 finished puzzles. Paying users ("Remove ads") see none.
+- Development builds always use Google's test units. Release builds read the units from
+  `EXPO_PUBLIC_ADMOB_BANNER_IOS` / `_ANDROID` and `EXPO_PUBLIC_ADMOB_INTERSTITIAL_IOS` / `_ANDROID`;
+  without them no ads are shown.
+- The AdMob **app IDs** live in the plugin config in `app.json` (currently Google's sample IDs).
+- Ads are native code: they don't run in Expo Go (skipped there) — use a development build.
+- Master switch: `ADS_ENABLED` in `src/ads/config.ts`.
 
 ### 2. RevenueCat (`react-native-purchases`) — wired
 
@@ -176,7 +178,7 @@ any of them with final artwork using the same file names.
 
 ```
 src/
-├── ads/              # AdMob banner + interstitial stubs
+├── ads/              # AdMob consent, banner and interstitial
 ├── cloud/            # Firebase scaffold
 ├── components/       # Confetti, NameInputModal, Onboarding, ResultModal
 ├── feedback/         # Haptic + sound services, useFeedback hook

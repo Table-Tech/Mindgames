@@ -5,7 +5,16 @@ import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
 import { useTheme } from '@/theme/ThemeProvider';
 import { fonts } from '@/theme/fonts';
-import { Body, Card, Chunky, Display, IconButton, ScreenHeader, ToolButton } from '@/ui/kit';
+import {
+  Body,
+  Card,
+  Chunky,
+  Display,
+  IconButton,
+  ScreenHeader,
+  ToolButton,
+  CONTENT_MAX_WIDTH,
+} from '@/ui/kit';
 import { capitalize, formatClock, formatTime } from '@/core/format';
 import { todayISO } from '@/core/date';
 import { SudokuBoard } from '@/games/sudoku/SudokuBoard';
@@ -387,7 +396,14 @@ export function SudokuScreen({ mode: navMode }: Props) {
 
 const styles = StyleSheet.create({
   container: { flex: 1 },
-  scroll: { padding: 16, paddingTop: 8, gap: 14 },
+  scroll: {
+    padding: 16,
+    paddingTop: 8,
+    gap: 14,
+    width: '100%',
+    maxWidth: CONTENT_MAX_WIDTH,
+    alignSelf: 'center',
+  },
   statsRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',

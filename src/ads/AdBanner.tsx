@@ -1,31 +1,36 @@
-import React from 'react';
-import { Text, View, StyleSheet } from 'react-native';
+import React, { useState } from 'react';
+import { StyleSheet, View } from 'react-native';
 import { useTheme } from '@/theme/ThemeProvider';
-import { fonts } from '@/theme/fonts';
 import { useEntitlements } from '@/iap/EntitlementsProvider';
-import { ADS_ENABLED } from './config';
+import { adUnitId } from './config';
+import { adsModule, useAdsState } from './admob';
 
-// TODO(ads): replace this stub with `react-native-google-mobile-ads`.
-//   yarn add react-native-google-mobile-ads
-//   - Configure AdMob app ID in app.json under expo.plugins.
-//   - Render <BannerAd unitId={AdUnit.banner} size={BannerAdSize.ADAPTIVE_BANNER}/>
-// This stub keeps the layout slot reserved so the UI looks identical with/without ads.
+// Anchored adaptive banner at the bottom of the screen. Renders nothing until
+// consent is gathered, for paying users, in Expo Go, or when the build has no
+// banner unit configured.
 export function AdBanner() {
   const { colors } = useTheme();
   const { adsRemoved } = useEntitlements();
-  if (!ADS_ENABLED || adsRemoved) return null;
+  const { ready } = useAdsState();
+  const [failed, setFailed] = useState(false);
+  const unit = adUnitId('banner');
+
+  if (!adsModule || !ready || adsRemoved || !unit || failed) return null;
+  const { BannerAd, BannerAdSize } = adsModule;
+
   return (
     <View style={[styles.banner, { backgroundColor: colors.surfaceAlt, borderColor: colors.ink }]}>
-      <Text style={{ fontFamily: fonts.body, color: colors.textMuted, fontSize: 12 }}>
-        Ad slot (AdMob banner)
-      </Text>
+      <BannerAd
+        unitId={unit}
+        size={BannerAdSize.ANCHORED_ADAPTIVE_BANNER}
+        onAdFailedToLoad={() => setFailed(true)}
+      />
     </View>
   );
 }
 
 const styles = StyleSheet.create({
   banner: {
-    height: 56,
     alignItems: 'center',
     justifyContent: 'center',
     borderTopWidth: 2,

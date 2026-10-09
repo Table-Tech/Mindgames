@@ -47,7 +47,11 @@ Legenda: `[x]` = gedaan / bestaat · `[ ]` = nog te doen.
 - [x] Firebase: anonieme login, Firestore cloud-save, security rules in `firestore.rules`
 - [x] RevenueCat-integratie voor "Remove ads" (product `remove_ads`, entitlement `no_ads`), prijs uit de store, herstel van aankopen
 - [x] De nep-aankoop zonder RevenueCat-sleutel werkt alleen nog in development; in release-builds zijn aankopen dan "niet beschikbaar"
-- [x] Advertenties achter één schakelaar `ADS_ENABLED` (`src/ads/config.ts`), staat uit: geen test-popup, geen "Ad slot"-balk, geen "Remove ads"-kaart
+- [x] **AdMob** (`react-native-google-mobile-ads`): adaptieve banner, interstitial na elke 3 puzzels (vooraf geladen, resultaat verschijnt na de ad), geen ads voor betalende gebruikers
+- [x] Toestemming via Google UMP (AVG), daarna de iOS App Tracking Transparency-vraag; "Privacy choices" in Settings voor EER/VK-gebruikers
+- [x] In development altijd Google's test-ads; een release-build zonder ingestelde ad-unit-ID's toont gewoon geen ads
+- [x] Ads (en Firebase) worden in Expo Go overgeslagen, dus testen via QR blijft werken
+- [x] iPad: inhoud gecentreerd met een maximale breedte; `UIRequiresFullScreen` gezet (vereist voor een iPad-app die alleen staand werkt)
 - [x] `app.json`: versie 1.0.0, iconen, splash, `ITSAppUsesNonExemptEncryption: false`, ongeldige iOS-sleutel weg
 - [x] Android-permissies opgeschoond: `RECORD_AUDIO`, `SCHEDULE_EXACT_ALARM` en `USE_EXACT_ALARM` geblokkeerd, microfoon uit in `expo-audio`
 - [x] Naam van het woordspel staat op één plek (`src/games/wordle/name.ts`)
@@ -68,15 +72,15 @@ Legenda: `[x]` = gedaan / bestaat · `[ ]` = nog te doen.
 **Beslissingen 👤**
 - [ ] 🔴👤 **Nieuwe naam voor het woordspel** ("Wordle" is een handelsmerk van The New York Times). Daarna één regel aanpassen in `src/games/wordle/name.ts`, en `[WORD GAME NAME]` invullen in `docs/store-listing.md`.
 - [ ] 🔴👤 Checken of de naam "Puzzaro" vrij is in beide stores (en als merk)
-- [ ] 🔴👤 **v1 met of zonder advertenties?** Zonder: niets meer te doen. Met: zie sectie D, en daarna `ADS_ENABLED = true`.
-- [ ] 🟠👤 iPad ondersteunen in v1? Zo niet: `supportsTablet: false` in `app.json`.
+- [x] v1 komt **met advertenties** (AdMob ingebouwd, zie sectie D)
+- [x] **iPad wordt ondersteund**
 
 **Privacy en juridisch 👤**
 - [ ] 🔴👤 Privacybeleid afmaken (placeholders invullen) en online zetten op een publieke URL
 - [ ] 🔴👤 Support-URL of -e-mailadres (Apple verplicht een support-URL)
 - [ ] 🔴👤 Nieuwe Firestore-rules deployen (eigenaars mogen hun eigen scores nu verwijderen; nodig voor "Clear all data"): `firebase deploy --only firestore:rules`
 
-**Aankopen 👤** (alleen nodig als je met advertenties uitbrengt; zonder ads is er niets te koop)
+**Aankopen ("Remove ads") 👤**
 - [ ] 🔴👤 Product `remove_ads` (niet-verbruikbaar) in App Store Connect én Play Console
 - [ ] 🔴👤 In RevenueCat: entitlement `no_ads`, een "current" offering met dat product, beide apps gekoppeld
 - [ ] 🔴👤 RevenueCat-sleutels als EAS-environment-variables voor de production-build
@@ -104,7 +108,8 @@ Legenda: `[x]` = gedaan / bestaat · `[ ]` = nog te doen.
 ### B. Alleen Apple App Store 🟠
 - [ ] 🟠👤 Apple Developer Program (€99/jaar)
 - [ ] 🟠👤 App aanmaken in App Store Connect met bundle-id `com.puzzaro.tabletech`
-- [ ] 🟠👤 Screenshots: iPhone 6,9" (1320×2868), en iPad 13" als tablets aan blijven
+- [ ] 🟠👤 Screenshots: iPhone 6,9" (1320×2868) **én iPad 13" (2064×2752)**, want iPad wordt ondersteund
+- [ ] 🟠👤 Layout op een echte iPad (of simulator) nalopen
 - [ ] 🟠👤 App Privacy ("nutrition labels") invullen, consistent met het privacybeleid
 - [ ] 🟠👤 Leeftijdsclassificatie-vragenlijst invullen
 - [ ] 🟠👤 Privacy manifest controleren in de build (`PrivacyInfo.xcprivacy` voor AsyncStorage, Firebase, RevenueCat)
@@ -116,19 +121,25 @@ Legenda: `[x]` = gedaan / bestaat · `[ ]` = nog te doen.
 - [ ] 🟠👤 **Verplichte gesloten test bij een nieuw persoonlijk account: minimaal 12 testers, 14 dagen aaneengesloten.** Plan dit vroeg: het is meestal het langste traject.
 - [ ] 🟠👤 Data safety-formulier invullen
 - [ ] 🟠👤 Contentclassificatie (IARC) en doelgroep (13+ of 18+, om het Families-beleid te vermijden)
-- [ ] 🟠👤 "Bevat advertenties" aanvinken als je met ads uitbrengt
+- [ ] 🟠👤 "Bevat advertenties" aanvinken
 - [ ] 🟠👤 Feature graphic 1024×500 (heeft het definitieve naam/logo-ontwerp nodig) en minimaal 2 telefoon-screenshots; het 512-icoon staat klaar in `store/play-icon-512.png`
 - [ ] 🟠👤 Target SDK in de build controleren tegen de actuele Play-eis (Expo SDK 54 target API 36)
 
-### D. Als je met advertenties uitbrengt 🔴/🟠
-- [ ] 🔴 `react-native-google-mobile-ads` installeren en configureren (AdMob app-ID's in `app.json`, nieuwe dev-build nodig) — kan ik doen zodra je kiest voor ads en de AdMob-ID's hebt
-- [ ] 🔴 Echte banner in `src/ads/AdBanner.tsx` en interstitial in `showInterstitial()` (`src/ads/interstitial.ts`)
-- [ ] 🔴 Test-ad-unit-ID's in development
-- [ ] 🔴 Toestemmingspopup (Google UMP) voor de EER/VK
-- [ ] 🟠 iOS: App Tracking Transparency-prompt + `NSUserTrackingUsageDescription`, en SKAdNetwork-ID's
-- [ ] 🟠👤 `app-ads.txt` op je ontwikkelaarswebsite
-- [ ] 🟠👤 Privacybeleid en -formulieren aanvullen met de advertentie-ID (de tekst staat al klaar in het concept)
-- [ ] 🔴 `ADS_ENABLED = true` in `src/ads/config.ts`
+### D. Advertenties (AdMob) 🔴/🟠
+- [x] `react-native-google-mobile-ads` geïnstalleerd en geconfigureerd (plugin in `app.json`)
+- [x] Banner (`src/ads/AdBanner.tsx`) en interstitial (`src/ads/interstitial.ts`)
+- [x] Test-ads in development
+- [x] Toestemming (UMP) en iOS-trackingvraag, "Privacy choices" in Settings
+- [x] Privacybeleid-concept aangevuld met AdMob
+- [ ] 🔴👤 AdMob-account aanmaken, de app toevoegen voor iOS en Android, en een banner- en interstitial-ad-unit per platform aanmaken
+- [ ] 🔴👤 De **echte AdMob-app-ID's** in `app.json` zetten (`androidAppId` / `iosAppId` bij de `react-native-google-mobile-ads`-plugin). Er staan nu Google's voorbeeld-ID's: daarmee verdien je niets.
+- [ ] 🔴👤 De ad-unit-ID's als EAS-environment-variables: `EXPO_PUBLIC_ADMOB_BANNER_IOS`, `EXPO_PUBLIC_ADMOB_BANNER_ANDROID`, `EXPO_PUBLIC_ADMOB_INTERSTITIAL_IOS`, `EXPO_PUBLIC_ADMOB_INTERSTITIAL_ANDROID`
+- [ ] 🔴👤 In AdMob → **Privacy & messaging** een AVG-toestemmingsbericht (EER/VK) aanmaken en publiceren; zonder dat bericht toont UMP geen formulier
+- [ ] 🟠👤 Optioneel in dezelfde sectie een "IDFA explainer"-bericht voor iOS
+- [ ] 🟠👤 `app-ads.txt` op je ontwikkelaarswebsite (dezelfde site als in de store-listing)
+- [ ] 🟠 De volledige lijst SKAdNetwork-ID's van Google toevoegen aan `skAdNetworkItems` in `app.json` (nu staat alleen Google's eigen ID erin)
+- [ ] 🔴👤 Nieuwe development-build maken: AdMob is native code (`eas build --profile development` of `npx expo run:android`). In Expo Go zie je geen ads.
+- [ ] 🔴👤 Testen: toestemmingsformulier (zet je toestel op een EU-locatie of gebruik UMP-debug), ATT-vraag op iOS, banner, interstitial na 3 puzzels, en geen ads meer na "Remove ads"
 
 ### E. Sterk aanbevolen voor v1 🟡
 - [ ] 🟡 Woordenlijst: één lijst van ~4.200 woorden voor antwoorden én pogingen. Splitsen in een kleine lijst bekende antwoordwoorden en een grote lijst geldige pogingen (10k+). 👤 Kies een bron met een geschikte licentie.

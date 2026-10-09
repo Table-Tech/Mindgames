@@ -19,7 +19,17 @@ import { loadLeaderboard, type LeaderboardEntry } from '@/leaderboard/leaderboar
 import { shiftISO, todayISO, weekdayIndex } from '@/core/date';
 import { capitalize } from '@/core/format';
 import { GAME_CATALOG } from '@/games/catalog';
-import { Body, Card, Chunky, Display, Eyebrow, OUTLINE, Segmented, TabBar } from '@/ui/kit';
+import {
+  Body,
+  Card,
+  Chunky,
+  Display,
+  Eyebrow,
+  OUTLINE,
+  Segmented,
+  TabBar,
+  CONTENT_MAX_WIDTH,
+} from '@/ui/kit';
 
 const INK = '#1D1A33';
 
@@ -312,7 +322,14 @@ function Leaderboard({ entries }: { entries: LeaderboardEntry[] }) {
 
 const styles = StyleSheet.create({
   container: { flex: 1 },
-  scroll: { padding: 16, paddingTop: 12, gap: 16 },
+  scroll: {
+    padding: 16,
+    paddingTop: 12,
+    gap: 16,
+    width: '100%',
+    maxWidth: CONTENT_MAX_WIDTH,
+    alignSelf: 'center',
+  },
   hero: { padding: 18, paddingHorizontal: 20, gap: 14 },
   heroTop: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
   heroNumber: { fontFamily: fonts.display, fontSize: 46, lineHeight: 50, color: INK },

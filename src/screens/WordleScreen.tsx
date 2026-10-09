@@ -4,7 +4,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
 import { useTheme } from '@/theme/ThemeProvider';
 import { fonts } from '@/theme/fonts';
-import { Body, Chunky, Display, IconButton, ScreenHeader } from '@/ui/kit';
+import { Body, Chunky, Display, IconButton, ScreenHeader, CONTENT_MAX_WIDTH } from '@/ui/kit';
 import { formatClock, formatTime } from '@/core/format';
 import { todayISO } from '@/core/date';
 import { WordleGrid } from '@/games/wordle/WordleGrid';
@@ -207,7 +207,15 @@ export function WordleScreen({ mode }: Props) {
 
 const styles = StyleSheet.create({
   container: { flex: 1 },
-  body: { flex: 1, padding: 16, paddingTop: 8, gap: 12 },
+  body: {
+    flex: 1,
+    padding: 16,
+    paddingTop: 8,
+    gap: 12,
+    width: '100%',
+    maxWidth: CONTENT_MAX_WIDTH,
+    alignSelf: 'center',
+  },
   toastSlot: { height: 36, alignItems: 'center', justifyContent: 'center' },
   toast: { paddingHorizontal: 16, paddingVertical: 7, borderRadius: 999 },
   bigBtn: { height: 52, alignItems: 'center', justifyContent: 'center' },

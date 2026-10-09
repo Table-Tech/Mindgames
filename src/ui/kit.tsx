@@ -21,6 +21,9 @@ export type IconName = keyof typeof Ionicons.glyphMap;
 
 export const OUTLINE = 2;
 
+/** Content column width; keeps layouts phone-shaped on iPad and tablets. */
+export const CONTENT_MAX_WIDTH = 600;
+
 // ---------- Text ----------
 
 export function Display({ style, ...rest }: TextProps & { style?: StyleProp<TextStyle> }) {

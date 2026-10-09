@@ -4,7 +4,16 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
 import { useTheme } from '@/theme/ThemeProvider';
 import { fonts } from '@/theme/fonts';
-import { Body, Card, Display, Eyebrow, IconButton, ScreenHeader, ToolButton } from '@/ui/kit';
+import {
+  Body,
+  Card,
+  Display,
+  Eyebrow,
+  IconButton,
+  ScreenHeader,
+  ToolButton,
+  CONTENT_MAX_WIDTH,
+} from '@/ui/kit';
 import { formatClock, formatTime } from '@/core/format';
 import { todayISO } from '@/core/date';
 import { MahjongBoard } from '@/games/mahjong/MahjongBoard';
@@ -286,7 +295,14 @@ function Stat({ label, value }: { label: string; value: string }) {
 
 const styles = StyleSheet.create({
   container: { flex: 1 },
-  scroll: { padding: 16, paddingTop: 8, gap: 14 },
+  scroll: {
+    padding: 16,
+    paddingTop: 8,
+    gap: 14,
+    width: '100%',
+    maxWidth: CONTENT_MAX_WIDTH,
+    alignSelf: 'center',
+  },
   statsRow: { flexDirection: 'row', gap: 8 },
   stat: { flex: 1, alignItems: 'center', paddingVertical: 7 },
   table: { overflow: 'hidden' },

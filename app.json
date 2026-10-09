@@ -7,24 +7,20 @@
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "automatic",
     "scheme": "puzzaro",
-    "assetBundlePatterns": [
-      "**/*"
-    ],
+    "assetBundlePatterns": ["**/*"],
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "com.puzzaro.tabletech",
       "googleServicesFile": "./GoogleService-Info.plist",
       "infoPlist": {
-        "ITSAppUsesNonExemptEncryption": false
+        "ITSAppUsesNonExemptEncryption": false,
+        "UIRequiresFullScreen": true
       }
     },
     "android": {
       "package": "com.puzzaro.tabletech",
       "googleServicesFile": "./google-services.json",
-      "permissions": [
-        "VIBRATE",
-        "RECEIVE_BOOT_COMPLETED"
-      ],
+      "permissions": ["VIBRATE", "RECEIVE_BOOT_COMPLETED"],
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",
         "backgroundColor": "#F3F0FF"
@@ -67,6 +63,21 @@
           "ios": {
             "useFrameworks": "static"
           }
+        }
+      ],
+      [
+        "react-native-google-mobile-ads",
+        {
+          "androidAppId": "ca-app-pub-3940256099942544~3347511713",
+          "iosAppId": "ca-app-pub-3940256099942544~1458002511",
+          "delayAppMeasurementInit": true,
+          "skAdNetworkItems": ["cstr6suwn9.skadnetwork"]
+        }
+      ],
+      [
+        "expo-tracking-transparency",
+        {
+          "userTrackingPermission": "Allow Puzzaro to use your data to show you more relevant ads. Ads keep the games free."
         }
       ]
     ],

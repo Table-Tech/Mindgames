@@ -74,7 +74,7 @@ Bright, bold and satisfying to play. Grab your daily three!
 7. Dark mode (any game)
 
 Sizes: iPhone 6.9" (1320 × 2868) for the App Store; at least 2 phone screenshots for Play (16:9 or
-9:16, 320–3840 px). Add iPad 13" (2064 × 2752) if `supportsTablet` stays on.
+9:16, 320–3840 px). iPad is supported, so the App Store also needs iPad 13" (2064 × 2752) screenshots.
 
 ## Still to make
 

@@ -12,7 +12,7 @@ import { loadHomeStatus, type DailyStatus, type HomeStatus } from '@/home/homeSt
 import { DIFFICULTIES, type Difficulty } from '@/games/sudoku/types';
 import { GAME_CATALOG } from '@/games/catalog';
 import { capitalize } from '@/core/format';
-import { Body, Chunky, Display, Eyebrow, OUTLINE, Pill, TabBar } from '@/ui/kit';
+import { Body, Chunky, Display, Eyebrow, OUTLINE, Pill, TabBar, CONTENT_MAX_WIDTH } from '@/ui/kit';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'Home'>;
 
@@ -281,7 +281,14 @@ function PracticeCard({
 
 const styles = StyleSheet.create({
   container: { flex: 1 },
-  body: { padding: 16, paddingTop: 12, gap: 18 },
+  body: {
+    padding: 16,
+    paddingTop: 12,
+    gap: 18,
+    width: '100%',
+    maxWidth: CONTENT_MAX_WIDTH,
+    alignSelf: 'center',
+  },
   headerRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
   brand: { flexDirection: 'row', alignItems: 'center', gap: 10 },
   logo: {
