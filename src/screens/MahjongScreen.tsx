@@ -49,6 +49,8 @@ interface Props {
   mode: MahjongMode;
 }
 
+const FELT_PADDING = 8;
+
 export function MahjongScreen({ mode }: Props) {
   const { colors, isDark } = useTheme();
   const fb = useFeedback();
@@ -62,6 +64,7 @@ export function MahjongScreen({ mode }: Props) {
   const [state, setState] = useState<MahjongState | null>(null);
   const [selectedId, setSelectedId] = useState<number | null>(null);
   const [hintIds, setHintIds] = useState<Set<number>>(() => new Set());
+  const [boardWidth, setBoardWidth] = useState(0);
   const finishHandled = useRef(false);
   const now = useNow(state?.outcome === 'playing');
 
@@ -186,19 +189,22 @@ export function MahjongScreen({ mode }: Props) {
         </View>
 
         <Card color={colors.mahjong} radius={24} depth={5} style={styles.table}>
-          <ScrollView
-            horizontal
-            contentContainerStyle={{ paddingVertical: 10, paddingHorizontal: 6, flexGrow: 1 }}
-            showsHorizontalScrollIndicator={false}
+          {/* Measure the felt so the board scales to fit and stays centred. */}
+          <View
+            style={styles.felt}
+            onLayout={e => setBoardWidth(e.nativeEvent.layout.width - FELT_PADDING * 2)}
           >
-            <MahjongBoard
-              tiles={state.tiles}
-              removed={state.removed}
-              selectedId={selectedId}
-              hintIds={hintIds}
-              onSelect={onSelect}
-            />
-          </ScrollView>
+            {boardWidth > 0 && (
+              <MahjongBoard
+                tiles={state.tiles}
+                removed={state.removed}
+                selectedId={selectedId}
+                hintIds={hintIds}
+                onSelect={onSelect}
+                maxWidth={boardWidth}
+              />
+            )}
+          </View>
         </Card>
 
         <View style={styles.toastSlot}>
@@ -306,6 +312,7 @@ const styles = StyleSheet.create({
   statsRow: { flexDirection: 'row', gap: 8 },
   stat: { flex: 1, alignItems: 'center', paddingVertical: 7 },
   table: { overflow: 'hidden' },
+  felt: { paddingVertical: 10, paddingHorizontal: FELT_PADDING, alignItems: 'center' },
   toastSlot: { height: 34, alignItems: 'center', justifyContent: 'center' },
   toast: { paddingHorizontal: 16, paddingVertical: 7, borderRadius: 999 },
   actionRow: { flexDirection: 'row', gap: 10 },

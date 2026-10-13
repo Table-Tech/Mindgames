@@ -1,16 +1,14 @@
 import React, { useMemo } from 'react';
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { Pressable, StyleSheet, View } from 'react-native';
 import { useTheme } from '@/theme/ThemeProvider';
 import { freeTiles } from './engine';
 import { GRID_H, GRID_W, MAX_Z } from './layout';
+import { TileFace, tileName } from './TileFace';
 import type { Tile } from './types';
 
-const TILE_W = 32;
-const TILE_H = 42;
-const EDGE = 4; // visible tile thickness under the face
-const TEXT_PRESENTATION = '\uFE0E';
-const Z_OFFSET_X = 4; // each layer shifts right
-const Z_OFFSET_Y = -5; // and up, giving a 3D look
+const MIN_TILE_W = 24;
+const MAX_TILE_W = 60;
+const BORDER = 1.5;
 
 interface Props {
   tiles: Tile[];
@@ -18,10 +16,25 @@ interface Props {
   selectedId: number | null;
   hintIds: Set<number>;
   onSelect: (id: number) => void;
+  /** Width available for the board; tiles scale to fill it. */
+  maxWidth: number;
 }
 
-export function MahjongBoard({ tiles, removed, selectedId, hintIds, onSelect }: Props) {
+/** Tile metrics for a board that should fit in `maxWidth`. */
+function metrics(maxWidth: number) {
+  const tileW = Math.max(MIN_TILE_W, Math.min(MAX_TILE_W, Math.floor(maxWidth / GRID_W)));
+  return {
+    tileW,
+    tileH: Math.round(tileW * 1.3),
+    edge: Math.round(tileW * 0.12), // visible tile thickness under the face
+    zx: tileW * 0.12, // each layer shifts right
+    zy: -tileW * 0.15, // and up, giving a 3D look
+  };
+}
+
+export function MahjongBoard({ tiles, removed, selectedId, hintIds, onSelect, maxWidth }: Props) {
   const { colors } = useTheme();
+  const { tileW, tileH, edge, zx, zy } = metrics(maxWidth);
 
   const freeIds = useMemo(() => {
     const s = new Set<number>();
@@ -40,8 +53,12 @@ export function MahjongBoard({ tiles, removed, selectedId, hintIds, onSelect }: 
     [tiles, removed],
   );
 
-  const boardWidth = GRID_W * TILE_W + (MAX_Z + 1) * Math.abs(Z_OFFSET_X);
-  const boardHeight = GRID_H * TILE_H + (MAX_Z + 1) * Math.abs(Z_OFFSET_Y) + EDGE;
+  // Upper layers sit inside the base footprint, so their right shift never
+  // pokes past the base layer; only the upward shift needs extra room.
+  const boardWidth = GRID_W * tileW;
+  const boardHeight = GRID_H * tileH + MAX_Z * -zy + edge;
+  const faceW = tileW - BORDER * 2;
+  const faceH = tileH - BORDER * 2;
 
   return (
     <View style={[styles.board, { width: boardWidth, height: boardHeight }]}>
@@ -49,8 +66,8 @@ export function MahjongBoard({ tiles, removed, selectedId, hintIds, onSelect }: 
         const free = freeIds.has(t.id);
         const isSelected = selectedId === t.id;
         const isHint = hintIds.has(t.id);
-        const left = t.pos.x * TILE_W + t.pos.z * Z_OFFSET_X;
-        const top = t.pos.y * TILE_H + MAX_Z * -Z_OFFSET_Y + t.pos.z * Z_OFFSET_Y;
+        const left = t.pos.x * tileW + t.pos.z * zx;
+        const top = t.pos.y * tileH + MAX_Z * -zy + t.pos.z * zy;
         const zIndex = t.pos.z * 100 + t.pos.y * 10 + t.pos.x;
 
         const face = isSelected ? colors.sunflower : isHint ? colors.accentMuted : colors.tileFace;
@@ -60,14 +77,16 @@ export function MahjongBoard({ tiles, removed, selectedId, hintIds, onSelect }: 
             key={t.id}
             disabled={!free}
             onPress={() => onSelect(t.id)}
-            accessibilityLabel={`Tile ${t.glyph}${free ? '' : ', blocked'}`}
+            accessibilityLabel={`${tileName(t.glyph)}${free ? '' : ', blocked'}`}
             style={[
               styles.tile,
               {
                 left,
                 top,
-                width: TILE_W,
-                height: TILE_H + EDGE,
+                width: tileW,
+                height: tileH + edge,
+                borderRadius: tileW * 0.2,
+                borderBottomWidth: edge + BORDER,
                 backgroundColor: face,
                 borderColor: colors.ink,
                 borderBottomColor: isSelected ? '#B8860B' : colors.tileEdge,
@@ -75,10 +94,7 @@ export function MahjongBoard({ tiles, removed, selectedId, hintIds, onSelect }: 
               },
             ]}
           >
-            <Text style={{ fontSize: 22, color: '#1D1A33' }} allowFontScaling={false}>
-              {/* U+FE0E asks for the text glyph, not a color emoji (e.g. 🀄 on Android). */}
-              {t.glyph + TEXT_PRESENTATION}
-            </Text>
+            <TileFace glyph={t.glyph} width={faceW} height={faceH} />
             {/* Blocked tiles get a soft shade so the playable ones pop. */}
             {!free && <View pointerEvents="none" style={styles.shade} />}
           </Pressable>
@@ -92,9 +108,7 @@ const styles = StyleSheet.create({
   board: { position: 'relative', alignSelf: 'center' },
   tile: {
     position: 'absolute',
-    borderRadius: 7,
-    borderWidth: 1.5,
-    borderBottomWidth: EDGE + 1.5,
+    borderWidth: BORDER,
     alignItems: 'center',
     justifyContent: 'center',
     overflow: 'hidden',
