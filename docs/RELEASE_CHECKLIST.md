@@ -1,189 +1,126 @@
-# Puzzaro — release checklist (App Store + Play Store)
+# Puzzaro — release checklist
 
-Stand van zaken: 8 oktober 2026, branch `redesign/arcade-ui`.
+Stand van zaken: **13 oktober 2026**.
 
-Legenda: `[x]` = gedaan / bestaat · `[ ]` = nog te doen.
-🔴 = blokkeert de release · 🟠 = vereist door één store · 🟡 = sterk aanbevolen · 🟢 = kan na de launch.
-👤 = hier is jouw beslissing, account of actie voor nodig.
+Legenda: `[x]` = gedaan · `[ ]` = nog te doen · 👤 = jouw actie/account/beslissing nodig
+🔴 = blokkeert · 🟠 = vereist door één store · 🟡 = sterk aanbevolen · 🟢 = na de launch
+
+## Waar staan we nu?
+
+| | Status |
+|---|---|
+| **v1.0.0 (Android, zonder ads)** | Productie (177 landen) goedgekeurd en op 13 okt **gepubliceerd**: https://play.google.com/store/apps/details?id=com.puzzaro.tabletech |
+| **v1.1.0 (ads + "Remove ads")** | Code klaar op branch **`feature/ads`** (ook op GitHub). Preview-APK met echte AdMob-blokken **gebouwd** (EAS build `09b187f3`), nog **te testen**. RevenueCat-koppeling wacht op Google. |
+| **iOS / App Store** | Nog niet gestart (code is iPad/iOS-klaar, accounts en build nog niet). |
+| **Branches** | `main` = v1 (default branch op GitHub) · `feature/ads` = v1.1.0 |
 
 ---
 
 ## Deel 1 — Wat er al is
 
-### Spellen
-- [x] **Sudoku**: 6 moeilijkheden (Easy → Extreme), generator met unieke oplossing, notities, auto-pencil, undo, 3 hints, 3 fouten = game over, score, pauze, opslaan en hervatten
-- [x] **Woordspel** (werktitel "Wordle"): 5 letters / 6 pogingen, correcte logica voor dubbele letters, toetsenbord met letterstatus, hard mode, opslaan en hervatten
-- [x] **Mahjong Solitaire**: 144 stenen in 5 lagen, altijd oplosbaar, hint (3), oplosbare shuffle (2), undo, score, opslaan en hervatten
-- [x] Generator-crash bij sommige Mahjong-seeds opgelost (met test over 300 seeds)
-
-### Functies rond de spellen
-- [x] Dagelijkse puzzel per spel (zelfde puzzel wereldwijd, op UTC-datum)
-- [x] Free play / oefenmodus per spel, met "Resume"
-- [x] Statistieken: gespeeld, win-%, beste/gemiddelde tijd, huidige/beste streak, woordspel-verdeling, Sudoku per moeilijkheid
-- [x] Weekoverzicht van de streak
-- [x] Lokale dag-leaderboard (op het apparaat)
-- [x] Resultaatscherm met confetti en delen (woordspel als gekleurd raster)
-- [x] Onboarding per spel (eenmalig)
-- [x] Dagelijkse herinnering (lokale notificatie, instelbaar tijdstip)
-- [x] Geluidseffecten (zelf gesynthetiseerd, `assets/sounds/*.wav`) en haptics, allebei aan/uit
-- [x] Thema: licht / donker / automatisch
-- [x] Instellingen: naam, thema, geluid, haptics, Sudoku-opties, hard mode, herinnering, sync, data wissen
+### Spellen en functies
+- [x] **Sudoku**: 6 moeilijkheden, unieke oplossing, notities, auto-notes, undo, 3 hints, 3 hartjes, score, pauze, opslaan/hervatten
+- [x] **Word Guess** (niet "Wordle", handelsmerk NYT): 5 letters / 6 pogingen, hard mode, opslaan/hervatten
+- [x] **Mahjong Solitaire**: 144 stenen, altijd oplosbaar, hints, shuffles, undo, opslaan/hervatten (generator-crash bij sommige seeds opgelost)
+- [x] Dagelijkse puzzels (wereldwijd gelijk, UTC), free play met "Resume", statistieken, streaks met weekoverzicht, lokale leaderboard
+- [x] Onboarding, dagelijkse herinnering, geluiden + haptics (aan/uit), thema licht/donker/automatisch
 - [x] Sudoku-opties "Auto-clear notes" en "Highlight mistakes" werken
-- [x] "Clear all data" wist ook de cloud: save, eigen dag-scores en het anonieme account
+- [x] "Clear all data" wist ook de cloud (save, eigen scores, anoniem account)
+- [x] **Delen**: opgemaakte tekst per spel (streak, hartjes, raster) + **deelafbeelding 1080×1350** in de app-stijl (iOS: beeld + tekst, Android: beeld)
 
 ### Ontwerp
-- [x] "Arcade sticker"-stijl op alle schermen (Fredoka + Nunito, eigen kleur per spel), ook in donkere modus
-- [x] Eigen tabbalk (Play / Stats / Settings) en headers
-- [x] App-icoon, Android adaptive icon, splash (licht + donker) en Play-icoon 512 px — gegenereerd met `node scripts/generate-assets.mjs`, vervangbaar door definitieve artwork
-- [x] Woordspel past op kleine schermen (tegels en toetsen schalen mee)
-- [x] Mahjong-tegels worden als tekst weergegeven in plaats van als gekleurde emoji (`U+FE0E`)
-- [x] Toegankelijkheidslabels op knoppen en cellen
-- [x] Vangnet voor crashes: vriendelijk foutscherm met "Try again" in plaats van een wit scherm
+- [x] "Arcade sticker"-stijl op alle schermen, ook donker; eigen tabbalk en headers
+- [x] App-icoon, adaptive icon, splash, Play-icoon 512 en feature graphic 1024×500 (`scripts/generate-assets.mjs`)
+- [x] 6 store-screenshots 1080×1920 (`store/screenshots/`, `scripts/frame-screenshots.mjs`)
+- [x] Word Guess past op kleine schermen; iPad: inhoud gecentreerd (max. 600 px), `UIRequiresFullScreen`
+- [x] Bug opgelost: Sudoku-illustratie op de Home-kaart liep uit de kaart
+- [x] Toegankelijkheidslabels; foutscherm i.p.v. wit scherm bij crashes
 
 ### Techniek
-- [x] Expo SDK 54 / React Native 0.81 / TypeScript
-- [x] SOLID-opzet: pure spelregels (`session.ts`), `GameRepository`, game-registry en -catalogus, cloud ontkoppeld via events
-- [x] 45 unit-tests slagen; typecheck en lint zonder fouten
-- [x] Firebase: anonieme login, Firestore cloud-save, security rules in `firestore.rules`
-- [x] RevenueCat-integratie voor "Remove ads" (product `remove_ads`, entitlement `no_ads`), prijs uit de store, herstel van aankopen
-- [x] De nep-aankoop zonder RevenueCat-sleutel werkt alleen nog in development; in release-builds zijn aankopen dan "niet beschikbaar"
-- [x] **AdMob** (`react-native-google-mobile-ads`): adaptieve banner, interstitial na elke 3 puzzels (vooraf geladen, resultaat verschijnt na de ad), geen ads voor betalende gebruikers
-- [x] Toestemming via Google UMP (AVG), daarna de iOS App Tracking Transparency-vraag; "Privacy choices" in Settings voor EER/VK-gebruikers
-- [x] In development altijd Google's test-ads; een release-build zonder ingestelde ad-unit-ID's toont gewoon geen ads
-- [x] Ads (en Firebase) worden in Expo Go overgeslagen, dus testen via QR blijft werken
-- [x] iPad: inhoud gecentreerd met een maximale breedte; `UIRequiresFullScreen` gezet (vereist voor een iPad-app die alleen staand werkt)
-- [x] `app.json`: versie 1.0.0, iconen, splash, `ITSAppUsesNonExemptEncryption: false`, ongeldige iOS-sleutel weg
-- [x] Android-permissies opgeschoond: `RECORD_AUDIO`, `SCHEDULE_EXACT_ALARM` en `USE_EXACT_ALARM` geblokkeerd, microfoon uit in `expo-audio`
-- [x] Naam van het woordspel staat op één plek (`src/games/wordle/name.ts`)
-- [x] EAS-project gekoppeld (`@tabletech/puzzaro`), build-profielen development / preview / production
-- [x] Bundle-id / package: `com.puzzaro.tabletech`
-- [x] README bijgewerkt
+- [x] Expo SDK 54 / React Native 0.81 / TypeScript; SOLID-opzet (pure spelregels, `GameRepository`, registry/catalogus, cloud via events)
+- [x] **47 unit-tests** slagen; typecheck en lint zonder fouten
+- [x] Firebase (anonieme login, Firestore cloud-save, rules), werkt niet in Expo Go en wordt daar overgeslagen
+- [x] RevenueCat `react-native-purchases` **10.12.2** (Android-SDK 10.26.0; Play-melding over 10.6.0 opgelost)
+- [x] Nep-aankoop zonder sleutel alleen in development; release zonder sleutel = "niet beschikbaar"
+- [x] Permissies opgeschoond (`RECORD_AUDIO`, exact alarm geblokkeerd; v1 ook `AD_ID` geblokkeerd)
+- [x] `.easignore` zodat EAS de Firebase-configbestanden meekrijgt
+- [x] EAS-project `@tabletech/puzzaro`, keystore bij EAS, build-profielen development / preview / production
 
-### Documenten (concept)
-- [x] Privacybeleid: `docs/privacy-policy.md`
-- [x] Store-teksten (naam, subtitel, keywords, beschrijvingen, screenshotlijst): `docs/store-listing.md`
+### Documenten en pagina's
+- [x] Privacybeleid en supportpagina **online**: https://table-tech.github.io/Mindgames/privacy-policy en …/support (TechTable, KvK 98067826, info@techtable.nl, data in de EU)
+- [x] Store-teksten: `docs/store-listing.md`
 
 ---
 
 ## Deel 2 — Wat nog moet
 
-### A. Blokkers voor beide stores 🔴
+### A. v1.0.0 live in de Play Store (bezig)
+- [x] Play Console-bedrijfsaccount (geen verplichte gesloten test van 14 dagen)
+- [x] App aangemaakt: "Puzzaro: Daily Puzzles", game, gratis
+- [x] Data safety ingevuld (Naam = optioneel; Andere acties + Apparaat-ID's = vereist; alleen app-functionaliteit; niet gedeeld)
+- [x] Advertentie-ID-verklaring: **Nee** (v1)
+- [x] Store-vermelding: teksten, icoon, feature graphic, screenshots
+- [x] Productie-build versiecode 4 geüpload naar **Interne tests**
+- [x] Interne test v1.0.0 (versiecode 4) **goedgekeurd** door Google
+- [x] Productie-release 4 (1.0.0), 177 landen + rest van de wereld, goedgekeurd
+- [x] Gepubliceerd via "Beheerd publiceren" (13 okt 2026)
+- [ ] 👤 Controleren dat de app in de Play Store staat en installeren als echte gebruiker
+- [ ] 🟡👤 Optioneel: nieuwe Home-screenshot zonder de (inmiddels opgeloste) Sudoku-kaartbug
 
-**Beslissingen 👤**
-- [x] Woordspel heet **"Word Guess"** (niet "Wordle", handelsmerk van The New York Times); aanpassen kan in `src/games/wordle/name.ts`
-- [ ] 🔴👤 Checken of de naam "Puzzaro" vrij is in beide stores (en als merk)
-- [x] **v1 (Play Store) komt zonder advertenties en aankopen**: `ADS_ENABLED = false`, en de AdMob-SDK zit niet in de build (`expo.autolinking.exclude`, plugin-config bewaard in `docs/admob-plugin.json`). AdMob is wel volledig ingebouwd voor een latere update (sectie D).
-- [x] **iPad wordt ondersteund**
+### B. Update 1.1.0: advertenties + "Remove ads" (`feature/ads`)
+**Klaar**
+- [x] Ads aan, AdMob-SDK in de build, `AD_ID` toegestaan, versie 1.1.0
+- [x] Banner, interstitial (elke 3 puzzels), toestemming (UMP), iOS-trackingvraag, "Privacy choices" in Settings
+- [x] AdMob-app-ID via `app.config.js` uit EAS; productie-build zonder ID stopt bewust met een fout
+- [x] `react-native-google-mobile-ads` vast op **16.3.4** (Ads-SDK 25.0.0). Nieuwere versies bouwen niet op Expo 54 / Kotlin 2.1 — pas na een Expo-upgrade ophogen.
+- [x] Privacybeleid met AdMob + RevenueCat klaar op de branch (datum invullen bij release)
+- [x] AdMob-account, Android-app, ad units **Banner** en **Interstitial** aangemaakt
+- [x] EAS-variabelen (production + preview): `ADMOB_ANDROID_APP_ID`, `EXPO_PUBLIC_ADMOB_BANNER_ANDROID`, `EXPO_PUBLIC_ADMOB_INTERSTITIAL_ANDROID`, `EXPO_PUBLIC_REVENUECAT_ANDROID` (ook development)
+- [x] Play Console: in-app-product **`remove_ads`** actief
+- [x] RevenueCat: project + Play Store-app + service account (credentials geüpload)
+- [x] Preview-APK met echte ad units gebouwd
 
-**Privacy en juridisch 👤**
-- [x] Privacybeleid ingevuld (TechTable, KvK 98067826, info@techtable.nl, data in de EU) en supportpagina gemaakt
-- [ ] 🔴👤 GitHub Pages aanzetten (Settings → Pages → main / docs) → https://table-tech.github.io/Mindgames/privacy-policy
-- [x] Support-URL: https://table-tech.github.io/Mindgames/support
-- [ ] 🔴👤 Nieuwe Firestore-rules deployen (eigenaars mogen hun eigen scores nu verwijderen; nodig voor "Clear all data"): `firebase deploy --only firestore:rules`
+**Nog te doen**
+- [ ] 👤 AdMob → Instellingen → **Testapparaten**: je telefoon toevoegen (vóór het testen!)
+- [ ] 👤 AdMob → Privacy & messaging: **AVG-bericht publiceren** (anders geen toestemmingsformulier)
+- [ ] 👤 Preview-APK testen: toestemming, banner, interstitial na 3 puzzels, "Privacy choices"
+- [ ] 👤 Play Console → Gebruikers en rechten: service account terugzetten van "Beheren (alle rechten)" naar alleen: app-info bekijken, financiële gegevens bekijken, bestellingen beheren
+- [ ] 👤 RevenueCat-credentials **groen** (Google zet rechten pas na 24–36 uur door; tip: beschrijving van `remove_ads` licht aanpassen en opnieuw "Check credentials")
+- [ ] 🟡👤 Google Cloud: rol **Pub/Sub Admin** (niet "Lite") + **Cloud Pub/Sub API** aan, daarna in RevenueCat "Connect to Google" (realtime-meldingen; optioneel)
+- [ ] 👤 RevenueCat: product `remove_ads`, entitlement **`no_ads`**, offering **`default`** (Lifetime-package) als **Current**
+- [ ] 👤 Play Console → Instellingen → **Licentietests**: eigen Gmail toevoegen
+- [ ] 👤 Play Console: **betalingsprofiel** TechTable (bank, btw)
+- [ ] 🟡👤 `app-ads.txt` op https://techtable.nl/app-ads.txt (regel uit AdMob); Play-website = techtable.nl
+- [x] Productie-build 1.1.0 gestart (vanaf `feature/ads`), voor de interne test
+- [ ] Na de test: `feature/ads` → `main` mergen, privacybeleid-datum invullen en pushen
+- [ ] 👤 1.1.0 via interne test: **aankoop "Remove ads"** en "Restore purchases" testen
+- [ ] 👤 Play Console bijwerken: Advertenties = **ja**; advertentie-ID = **ja (advertenties)**; Data safety: Apparaat-ID's ook voor advertenties + **gedeeld met AdMob**, plus **Aankoopgeschiedenis**; contentclassificatie opnieuw
+- [ ] 👤 AdMob: app koppelen aan de Play-vermelding zodra die live is
+- [ ] 👤 1.1.0 interne test → productie
 
-**Aankopen ("Remove ads") 👤** — pas nodig samen met ads, niet voor v1
-- [ ] 🔴👤 Product `remove_ads` (niet-verbruikbaar) in App Store Connect én Play Console
-- [ ] 🔴👤 In RevenueCat: entitlement `no_ads`, een "current" offering met dat product, beide apps gekoppeld
-- [ ] 🔴👤 RevenueCat-sleutels als EAS-environment-variables voor de production-build
-- [ ] 🔴👤 Paid Apps Agreement (Apple) en betaalprofiel (Google), met bank- en belastinggegevens
-- [ ] 🔴👤 Testen in de sandbox: kopen, annuleren, herstellen, opnieuw installeren
+### C. Apple App Store (later) 🟠
+- [ ] 👤 Apple Developer Program (€99/jaar), app in App Store Connect (`com.puzzaro.tabletech`)
+- [ ] 👤 AdMob iOS-app + ad units → `ADMOB_IOS_APP_ID`, `EXPO_PUBLIC_ADMOB_*_IOS`; RevenueCat iOS-app → `EXPO_PUBLIC_REVENUECAT_IOS`
+- [ ] Volledige SKAdNetwork-lijst van Google in `app.config.js`
+- [ ] 👤 Screenshots iPhone 6,9" én iPad 13"; layout op iPad nalopen
+- [ ] 👤 App Privacy-labels, leeftijdsclassificatie, privacy manifest in de build controleren, TestFlight
 
-**Firebase productie 👤**
-- [ ] 🔴👤 Productieproject controleren: anonieme login aan, rules gedeployd
-- [x] `.easignore` zorgt dat EAS-cloud-builds `google-services.json` en `GoogleService-Info.plist` meekrijgen (ze blijven buiten git)
+### D. Sterk aanbevolen 🟡
+- [ ] Woordenlijst splitsen: bekende antwoordwoorden + grote lijst geldige pogingen (10k+) — 👤 bron met geschikte licentie kiezen
+- [ ] Crashrapportage (Crashlytics of Sentry); het foutscherm heeft al een `onError`-haak
+- [ ] 👤 Firebase App Check (Play Integrity)
+- [ ] 👤 Globale leaderboard tonen of cloud-scores uitzetten (bij namen van anderen: filteren/melden, Apple 1.2)
+- [ ] 👤 Daily om 00:00 UTC (NL 01:00/02:00) laten zo of naar lokale tijd?
+- [ ] `expo doctor`: patch-updates `expo` 54.0.34 → 54.0.37, `expo-font`, `jest-expo`
+- [ ] Toegankelijkheid testen (TalkBack/VoiceOver, grote tekst); end-to-end-tests (bijv. Maestro)
 
-**Build en submit 👤**
-- [ ] 🔴👤 Production-build per platform: `eas build --profile production --platform ios|android`
-- [ ] 🔴👤 `eas.json` → `submit.production` invullen: iOS `ascAppId` en `appleTeamId`; Android `serviceAccountKeyPath` en `track`
-
-**Testen op echte toestellen 👤**
-- [ ] 🔴👤 Alle drie de spellen volledig uitspelen (winnen én verliezen), op iOS en Android
-- [ ] 🔴👤 Kleine schermen (iPhone SE / kleine Android) en donkere modus nalopen
-- [ ] 🔴👤 Verse installatie, afsluiten en hervatten, offline gebruik
-- [ ] 🔴👤 Notificatie komt binnen op het ingestelde tijdstip (incl. toestemmingsvraag Android 13+)
-- [ ] 🔴👤 Mahjong-tegels op een paar Android-toestellen: tekst in plaats van emoji?
-- [ ] 🔴👤 Geluiden: klinken ze goed, en niet te hard? (Vervangen kan met dezelfde bestandsnamen.)
-- [ ] 🔴👤 "Clear all data": verdwijnt het `/users/{uid}`-document in Firestore echt?
-- [ ] 🟡👤 Definitief icoon: het gegenereerde icoon goedkeuren of laten vervangen door een ontwerper
-
-### B. Alleen Apple App Store 🟠
-- [ ] 🟠👤 Apple Developer Program (€99/jaar)
-- [ ] 🟠👤 App aanmaken in App Store Connect met bundle-id `com.puzzaro.tabletech`
-- [ ] 🟠👤 Screenshots: iPhone 6,9" (1320×2868) **én iPad 13" (2064×2752)**, want iPad wordt ondersteund
-- [ ] 🟠👤 Layout op een echte iPad (of simulator) nalopen
-- [ ] 🟠👤 App Privacy ("nutrition labels") invullen, consistent met het privacybeleid
-- [ ] 🟠👤 Leeftijdsclassificatie-vragenlijst invullen
-- [ ] 🟠👤 Privacy manifest controleren in de build (`PrivacyInfo.xcprivacy` voor AsyncStorage, Firebase, RevenueCat)
-- [ ] 🟠👤 Listing invullen (concept in `docs/store-listing.md`)
-- [ ] 🟠👤 TestFlight-ronde voor de review
-
-### C. Alleen Google Play 🟠
-- [ ] 🟠👤 Play Console-account ($25 eenmalig) en identiteitsverificatie
-- [x] Bedrijfsaccount: de verplichte gesloten test (12 testers / 14 dagen) geldt **niet**; direct naar productie kan. Een korte interne test blijft verstandig.
-- [ ] 🟠👤 Data safety-formulier invullen
-- [ ] 🟠👤 Contentclassificatie (IARC) en doelgroep (13+ of 18+, om het Families-beleid te vermijden)
-- [ ] 🟠👤 "Bevat advertenties" aanvinken
-- [x] Feature graphic 1024×500 (`store/feature-graphic-1024x500.png`) en icoon 512 (`store/play-icon-512.png`)
-- [ ] 🟠👤 Minimaal 2 telefoon-screenshots
-- [ ] 🟠👤 Target SDK in de build controleren tegen de actuele Play-eis (Expo SDK 54 target API 36)
-
-### D. Update 1.1.0: advertenties + "Remove ads" (branch `feature/ads`)
-**Klaar in de code**
-- [x] Ads aan (`ADS_ENABLED = true`), AdMob-SDK weer in de build, `AD_ID`-permissie toegestaan
-- [x] AdMob-app-ID's via `app.config.js` uit EAS-variabelen; productie-build zonder ID stopt met een fout
-- [x] Banner, interstitial (elke 3 puzzels), toestemming (UMP), iOS-trackingvraag, "Privacy choices"
-- [x] "Remove ads"-aankoop zichtbaar; prijs uit de store
-- [x] Privacybeleid met AdMob en RevenueCat (datum invullen bij release)
-- [x] Versie 1.1.0
-
-**Jij: AdMob**
-- [ ] 👤 Account op admob.google.com, app toevoegen (Android), ad units **Banner** en **Interstitial**
-- [ ] 👤 Privacy & messaging → AVG-bericht (EER/VK) maken en **publiceren**
-- [ ] 👤 `app-ads.txt` op https://techtable.nl/app-ads.txt (regel uit AdMob)
-
-**Jij: in-app aankoop**
-- [ ] 👤 Play Console: betalingsprofiel TechTable (bank, btw)
-- [ ] 👤 Play Console → Inkomsten genereren → In-app-producten: `remove_ads` (eenmalig), prijs, activeren
-- [ ] 👤 RevenueCat: project + Android-app, Google Play service-account-JSON, entitlement `no_ads`, current offering met `remove_ads`
-
-**EAS-environment-variables (production)** — geef ze mij, of zet ze zelf met `eas env:create`
-- [ ] 👤 `ADMOB_ANDROID_APP_ID` (ca-app-pub-…~…)
-- [ ] 👤 `EXPO_PUBLIC_ADMOB_BANNER_ANDROID` en `EXPO_PUBLIC_ADMOB_INTERSTITIAL_ANDROID` (ca-app-pub-…/…)
-- [ ] 👤 `EXPO_PUBLIC_REVENUECAT_ANDROID` (goog_…)
-- [ ] (later voor iOS: `ADMOB_IOS_APP_ID`, `EXPO_PUBLIC_ADMOB_*_IOS`, `EXPO_PUBLIC_REVENUECAT_IOS`, volledige SKAdNetwork-lijst)
-
-**Testen en uitbrengen**
-- [ ] Dev-build met ads (`eas build --profile development --platform android`): toestemmingsformulier, banner, interstitial na 3 puzzels, kopen + herstellen (testaccount in Play Console → Licentietests)
-- [ ] `feature/ads` mergen naar `main`, productie-build 1.1.0
-- [ ] 👤 Play Console bijwerken: Advertenties = **ja**; advertentie-ID = **ja (advertenties)**; Data safety: **Apparaat-ID's** ook voor advertenties en **gedeeld met AdMob**, plus **Aankoopgeschiedenis**; contentclassificatie opnieuw
-- [ ] 👤 Privacybeleid-datum invullen en pushen (GitHub Pages)
-- [ ] 👤 Interne test → productie
-
-### E. Sterk aanbevolen voor v1 🟡
-- [ ] 🟡 Woordenlijst: één lijst van ~4.200 woorden voor antwoorden én pogingen. Splitsen in een kleine lijst bekende antwoordwoorden en een grote lijst geldige pogingen (10k+). 👤 Kies een bron met een geschikte licentie.
-- [ ] 🟡 Crashrapportage (Firebase Crashlytics of Sentry). Het foutscherm heeft al een `onError`-haak. Vergt een nieuwe native build.
-- [ ] 🟡👤 Firebase App Check (Play Integrity / App Attest registreren in de console), zodat niet iedereen scores kan wegschrijven
-- [ ] 🟡👤 Leaderboard: alleen lokaal zichtbaar; cloud-scores worden wel opgeslagen maar niet getoond. Globale ranglijst bouwen of cloud-scores uitzetten? Let op: namen van anderen tonen vraagt bij Apple om filteren/melden (richtlijn 1.2).
-- [ ] 🟡👤 Daily wisselt om 00:00 UTC (in Nederland 01:00/02:00). Zo laten of naar lokale tijd?
-- [ ] 🟡 Toegankelijkheid testen met VoiceOver/TalkBack en grote tekst (`allowFontScaling` staat op sommige plekken uit)
-- [ ] 🟡 End-to-end-test (bijv. Maestro) voor de hoofdflows
-
-### F. Na de launch 🟢
-- [ ] 🟢 Analytics (Firebase Analytics), alleen met toestemming
-- [ ] 🟢 Nederlandse vertaling (en andere talen)
-- [ ] 🟢 OTA-updates via EAS Update (channels staan al in `eas.json`)
-- [ ] 🟢 Store-reviewprompt na een paar gewonnen dailies (`expo-store-review`)
-- [ ] 🟢 Meer spellen: dankzij de registry en catalogus is dat één entry per plek
-- [ ] 🟢 Achievements / Game Center / Play Games
+### E. Na de launch 🟢
+- [x] `SHARE_URL` = Play Store-link (in 1.1.0); deelkaart toont "Get it free on Google Play"
+- [ ] Analytics (met toestemming), Nederlandse vertaling, EAS Update (OTA), reviewprompt, meer spellen, achievements
 
 ---
 
-## Volgorde die ik aanraad
-
-1. **Beslissingen** 👤: naam woordspel, wel/geen ads in v1, iPad wel/niet.
-2. **Accounts** 👤: Apple Developer, Play Console. Start de Google-account-verificatie meteen.
-3. **Privacybeleid + support-pagina** online 👤 (concept ligt klaar).
-4. **Firebase-rules deployen en EAS-secrets** 👤.
-5. **Production-builds** → Google gesloten test (12 testers / 14 dagen) starten → tegelijk TestFlight.
-6. **Store-listings**, screenshots, privacyformulieren, classificaties (teksten liggen klaar).
-7. **Review indienen** bij beide stores.
+## Volgorde vanaf nu
+1. 👤 Interne test v1 → testen → **productie** (A).
+2. 👤 Tijdens het wachten: AdMob-testapparaat + AVG-bericht, preview-APK testen, RevenueCat afmaken (B).
+3. Zodra v1 live is én RevenueCat groen: merge, build 1.1.0, aankoop testen, Play Console bijwerken, uitbrengen.

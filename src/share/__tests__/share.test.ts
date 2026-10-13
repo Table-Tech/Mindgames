@@ -26,6 +26,7 @@ describe('buildShareText', () => {
         '',
         '🔥 4-day streak',
         'Can you beat me? 🧩',
+        'https://play.google.com/store/apps/details?id=com.puzzaro.tabletech',
       ].join('\n'),
     );
   });
@@ -50,6 +51,7 @@ describe('buildShareText', () => {
         '⭐ 6,900 pts · 💡 0 hints · 🔀 2 shuffles',
         '',
         'Think you can do better? 🧩',
+        'https://play.google.com/store/apps/details?id=com.puzzaro.tabletech',
       ].join('\n'),
     );
   });
@@ -76,6 +78,7 @@ describe('buildShareText', () => {
         '🟦🟦🟦🟦🟦',
         '',
         'Can you beat me? 🧩',
+        'https://play.google.com/store/apps/details?id=com.puzzaro.tabletech',
       ].join('\n'),
     );
   });

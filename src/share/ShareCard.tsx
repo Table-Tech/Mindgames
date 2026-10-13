@@ -97,8 +97,10 @@ export function ShareCard({ result: r }: Props) {
           <Text style={styles.cta}>{r.won ? 'Can you beat me?' : 'Think you can do better?'}</Text>
         </View>
         <View style={{ alignItems: 'flex-end', gap: u(6) }}>
-          <Text style={styles.footSmall}>Play today's puzzles</Text>
-          <Text style={styles.footBig}>{SHARE_URL ? 'Get Puzzaro' : 'Search “Puzzaro”'}</Text>
+          <Text style={styles.footSmall}>
+            {SHARE_URL ? 'Get it free on' : "Play today's puzzles"}
+          </Text>
+          <Text style={styles.footBig}>{SHARE_URL ? 'Google Play' : 'Search “Puzzaro”'}</Text>
         </View>
       </View>
     </View>
