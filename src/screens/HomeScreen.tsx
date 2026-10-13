@@ -12,6 +12,10 @@ import { loadHomeStatus, type DailyStatus, type HomeStatus } from '@/home/homeSt
 import { DIFFICULTIES, type Difficulty } from '@/games/sudoku/types';
 import { GAME_CATALOG } from '@/games/catalog';
 import { capitalize } from '@/core/format';
+import { usePreferences } from '@/prefs/PreferencesProvider';
+import { Onboarding } from '@/components/Onboarding';
+import { useOnboarding } from '@/onboarding/useOnboarding';
+import { WELCOME_NAME_STEP, WELCOME_ONBOARDING } from '@/onboarding/steps';
 import { Body, Chunky, Display, Eyebrow, OUTLINE, Pill, TabBar, CONTENT_MAX_WIDTH } from '@/ui/kit';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'Home'>;
@@ -22,6 +26,13 @@ export function HomeScreen({ navigation }: Props) {
   const { colors } = useTheme();
   const [status, setStatus] = useState<HomeStatus | null>(null);
   const [difficulty, setDifficulty] = useState<Difficulty>('medium');
+  const { prefs, setPref } = usePreferences();
+  // Brand-new installs only: anyone who already has a name or has seen a
+  // game walkthrough (existing players, cloud restores) skips the welcome.
+  const welcome = useOnboarding(
+    'welcome',
+    p => !p.playerName && Object.keys(p.onboardingSeen).length === 0,
+  );
 
   const refresh = useCallback(async () => {
     setStatus(await loadHomeStatus());
@@ -158,6 +169,16 @@ export function HomeScreen({ navigation }: Props) {
       </ScrollView>
       <AdBanner />
       <TabBar active="Home" />
+      <Onboarding
+        visible={welcome.visible}
+        steps={WELCOME_ONBOARDING}
+        nameStep={{
+          ...WELCOME_NAME_STEP,
+          defaultValue: prefs.playerName,
+          onSubmit: name => setPref('playerName', name),
+        }}
+        onClose={welcome.dismiss}
+      />
     </SafeAreaView>
   );
 }

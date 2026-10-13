@@ -1,17 +1,18 @@
 import { useCallback, useEffect, useState } from 'react';
-import { usePreferences } from '@/prefs/PreferencesProvider';
+import { usePreferences, type Preferences } from '@/prefs/PreferencesProvider';
 
 // Returns { visible, dismiss } and auto-shows the modal the first time it's
-// mounted for a given id.
+// mounted for a given id. `eligible` can further restrict who sees it.
 
-export function useOnboarding(id: string) {
+export function useOnboarding(id: string, eligible?: (prefs: Preferences) => boolean) {
   const { prefs, markOnboardingSeen, loaded } = usePreferences();
   const [visible, setVisible] = useState(false);
+  const isEligible = !eligible || eligible(prefs);
 
   useEffect(() => {
     if (!loaded) return;
-    if (!prefs.onboardingSeen[id]) setVisible(true);
-  }, [id, loaded, prefs.onboardingSeen]);
+    if (!prefs.onboardingSeen[id] && isEligible) setVisible(true);
+  }, [id, loaded, prefs.onboardingSeen, isEligible]);
 
   const dismiss = useCallback(() => {
     setVisible(false);

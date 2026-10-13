@@ -3,6 +3,32 @@ import type { OnboardingStep } from '@/components/Onboarding';
 // One-time onboarding flow per game. The seen-flag is keyed by the id so each
 // game can have its own walkthrough that fires the first time it's opened.
 
+// App-wide welcome, shown once on the home screen the first time the app is
+// opened. Ends with a name step (see HomeScreen).
+export const WELCOME_ONBOARDING: OnboardingStep[] = [
+  {
+    icon: 'sparkles-outline',
+    title: 'Welcome to Puzzaro',
+    body: 'Three bite-sized brain games: Sudoku, a 5-letter word game, and Mahjong.',
+  },
+  {
+    icon: 'calendar-outline',
+    title: 'Your daily three',
+    body: 'Every day brings a fresh daily puzzle for each game. Solve them to build your streak.',
+  },
+  {
+    icon: 'trophy-outline',
+    title: 'Climb the leaderboard',
+    body: 'Solved dailies are ranked by time. Want more? Free play is always unlimited.',
+  },
+];
+
+export const WELCOME_NAME_STEP: OnboardingStep = {
+  icon: 'person-outline',
+  title: 'What should we call you?',
+  body: 'Your name appears on the leaderboards. You can change it anytime in Settings.',
+};
+
 export const SUDOKU_ONBOARDING: OnboardingStep[] = [
   {
     icon: 'grid-outline',
