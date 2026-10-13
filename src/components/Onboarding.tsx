@@ -1,5 +1,14 @@
-import React, { useState } from 'react';
-import { Modal, Pressable, StyleSheet, Text, View } from 'react-native';
+import React, { useEffect, useState } from 'react';
+import {
+  KeyboardAvoidingView,
+  Modal,
+  Platform,
+  Pressable,
+  StyleSheet,
+  Text,
+  TextInput,
+  View,
+} from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '@/theme/ThemeProvider';
 import { fonts } from '@/theme/fonts';
@@ -11,22 +20,37 @@ export interface OnboardingStep {
   body: string;
 }
 
+/** Optional final step that asks for the player's name. */
+export interface OnboardingNameStep extends OnboardingStep {
+  defaultValue?: string;
+  onSubmit: (name: string) => void;
+}
+
 interface Props {
   visible: boolean;
   steps: OnboardingStep[];
+  nameStep?: OnboardingNameStep;
   onClose: () => void;
 }
 
-export function Onboarding({ visible, steps, onClose }: Props) {
+export function Onboarding({ visible, steps, nameStep, onClose }: Props) {
   const { colors } = useTheme();
   const [index, setIndex] = useState(0);
-  const step = steps[index];
-  const isLast = index === steps.length - 1;
+  const [name, setName] = useState(nameStep?.defaultValue ?? '');
+  const allSteps = nameStep ? [...steps, nameStep] : steps;
+  const step = allSteps[index];
+  const isLast = index === allSteps.length - 1;
+  const isNameStep = !!nameStep && isLast;
   const iconColors = [colors.sudoku, colors.wordle, colors.mahjong, colors.pink];
   const iconBg = iconColors[index % iconColors.length];
 
+  useEffect(() => {
+    if (visible) setName(nameStep?.defaultValue ?? '');
+  }, [visible, nameStep?.defaultValue]);
+
   const next = () => {
     if (isLast) {
+      if (isNameStep && name.trim()) nameStep.onSubmit(name.trim());
       setIndex(0);
       onClose();
     } else {
@@ -38,7 +62,10 @@ export function Onboarding({ visible, steps, onClose }: Props) {
 
   return (
     <Modal transparent visible={visible} animationType="fade" onRequestClose={onClose}>
-      <View style={styles.backdrop}>
+      <KeyboardAvoidingView
+        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+        style={styles.backdrop}
+      >
         <Card radius={26} depth={6} style={styles.card}>
           <View style={[styles.iconWrap, { backgroundColor: iconBg, borderColor: colors.ink }]}>
             <Ionicons
@@ -50,8 +77,30 @@ export function Onboarding({ visible, steps, onClose }: Props) {
           <Display style={styles.title}>{step.title}</Display>
           <Body style={[styles.body, { color: colors.textMuted }]}>{step.body}</Body>
 
+          {isNameStep && (
+            <TextInput
+              value={name}
+              onChangeText={setName}
+              placeholder="Your name"
+              placeholderTextColor={colors.textMuted}
+              accessibilityLabel="Your name"
+              style={[
+                styles.input,
+                {
+                  color: colors.text,
+                  borderColor: colors.ink,
+                  backgroundColor: colors.surfaceAlt,
+                },
+              ]}
+              maxLength={16}
+              autoFocus
+              returnKeyType="done"
+              onSubmitEditing={next}
+            />
+          )}
+
           <View style={styles.dots}>
-            {steps.map((_, i) => (
+            {allSteps.map((_, i) => (
               <View
                 key={i}
                 style={[
@@ -92,7 +141,7 @@ export function Onboarding({ visible, steps, onClose }: Props) {
             <Text style={[styles.skipText, { color: colors.textMuted }]}>Skip</Text>
           </Pressable>
         </Card>
-      </View>
+      </KeyboardAvoidingView>
     </Modal>
   );
 }
@@ -118,6 +167,16 @@ const styles = StyleSheet.create({
   },
   title: { fontSize: 26, textAlign: 'center' },
   body: { fontSize: 15, textAlign: 'center', paddingHorizontal: 8, lineHeight: 21 },
+  input: {
+    alignSelf: 'stretch',
+    marginTop: 8,
+    paddingHorizontal: 14,
+    paddingVertical: 12,
+    borderRadius: 14,
+    borderWidth: OUTLINE,
+    fontSize: 18,
+    fontFamily: fonts.body,
+  },
   dots: { flexDirection: 'row', gap: 6, marginVertical: 14 },
   dot: { height: 10, borderRadius: 5, borderWidth: OUTLINE },
   actions: { flexDirection: 'row', gap: 10, alignSelf: 'stretch' },
