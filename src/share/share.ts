@@ -20,8 +20,9 @@ import { computeStats, getRecords } from '@/stats/stats';
 //   🔥 4-day streak
 //   Can you beat me? 🧩
 
-/** Store link appended to every share once the app is live. */
-export const SHARE_URL: string | null = null;
+/** Store link appended to every share. */
+export const SHARE_URL: string | null =
+  'https://play.google.com/store/apps/details?id=com.puzzaro.tabletech';
 
 // Squares match the in-app word game colors (blue = correct, yellow = present).
 const SQUARES: Record<string, string> = {

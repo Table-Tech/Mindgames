@@ -119,7 +119,9 @@ left before submitting to the App Store and Play Store.
 - Development builds always use Google's test units. Release builds read the units from
   `EXPO_PUBLIC_ADMOB_BANNER_IOS` / `_ANDROID` and `EXPO_PUBLIC_ADMOB_INTERSTITIAL_IOS` / `_ANDROID`;
   without them no ads are shown.
-- The AdMob **app IDs** live in the plugin config in `app.json` (currently Google's sample IDs).
+- The AdMob **app IDs** come from `app.config.js`, which reads `ADMOB_ANDROID_APP_ID` /
+  `ADMOB_IOS_APP_ID` (EAS environment variables). Development builds use Google's sample IDs; a
+  production build without the ID for its platform fails on purpose.
 - Ads are native code: they don't run in Expo Go (skipped there) — use a development build.
 - Master switch: `ADS_ENABLED` in `src/ads/config.ts`.
 
