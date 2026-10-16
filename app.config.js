@@ -6,23 +6,39 @@
 //   ADMOB_IOS_APP_ID       ca-app-pub-XXXXXXXXXXXXXXXX~ZZZZZZZZZZ
 //
 // Development builds fall back to Google's sample app IDs. A production build
-// without the ID for its platform fails on purpose, so a release can never
-// ship with test IDs (which earn nothing).
+// without the ID or ad units for its platform fails on purpose, so a release
+// can never ship with test IDs or without ads (which earns nothing).
 
 const SAMPLE_APP_IDS = {
   android: 'ca-app-pub-3940256099942544~3347511713',
   ios: 'ca-app-pub-3940256099942544~1458002511',
 };
 
+function isProductionBuildFor(platform) {
+  return (
+    process.env.EAS_BUILD_PROFILE === 'production' && process.env.EAS_BUILD_PLATFORM === platform
+  );
+}
+
+function missingInProduction(envName) {
+  return new Error(`${envName} is not set. Add it as an EAS environment variable for production.`);
+}
+
 function appId(platform, envName) {
   const value = process.env[envName];
   if (value) return value;
-  const isProduction = process.env.EAS_BUILD_PROFILE === 'production';
-  const buildingThisPlatform = process.env.EAS_BUILD_PLATFORM === platform;
-  if (isProduction && buildingThisPlatform) {
-    throw new Error(`${envName} is not set. Add it as an EAS environment variable for production.`);
-  }
+  if (isProductionBuildFor(platform)) throw missingInProduction(envName);
   return SAMPLE_APP_IDS[platform];
+}
+
+// Without its ad units a release would build fine and silently show no ads,
+// so production builds check them too (src/ads/config.ts reads them).
+for (const platform of ['android', 'ios']) {
+  if (!isProductionBuildFor(platform)) continue;
+  for (const kind of ['BANNER', 'INTERSTITIAL']) {
+    const envName = `EXPO_PUBLIC_ADMOB_${kind}_${platform.toUpperCase()}`;
+    if (!process.env[envName]) throw missingInProduction(envName);
+  }
 }
 
 module.exports = ({ config }) => ({

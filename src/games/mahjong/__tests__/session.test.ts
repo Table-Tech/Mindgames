@@ -1,4 +1,5 @@
-import { findHint, generateMahjong } from '../engine';
+import { findHint, generateMahjong, isStuck } from '../engine';
+import type { MahjongState, Tile } from '../types';
 import {
   createMahjongGame,
   MATCH_POINTS,
@@ -48,5 +49,47 @@ describe('mahjong session', () => {
     expect(hint && hint.ok && hint.state.hintsLeft).toBe(s.hintsLeft - 1);
     expect(shuffleRemaining(s)?.shufflesLeft).toBe(s.shufflesLeft - 1);
     expect(shuffleRemaining({ ...s, shufflesLeft: 0 })).toBeNull();
+  });
+
+  // Two separate towers of three; the two tops match, and once they are gone
+  // the two free tiles (groups 0 and 1) don't: out of moves.
+  const tower = (id: number, x: number, z: number, group: number): Tile => ({
+    id,
+    pos: { x, y: 0, z },
+    group,
+    glyph: String(group),
+  });
+  const nearlyStuck = (shufflesLeft: number): MahjongState => ({
+    ...fresh(),
+    tiles: [
+      tower(0, 0, 0, 0),
+      tower(1, 0, 1, 1),
+      tower(2, 0, 2, 2),
+      tower(3, 4, 0, 1),
+      tower(4, 4, 1, 0),
+      tower(5, 4, 2, 2),
+    ],
+    removed: new Set(),
+    shufflesLeft,
+  });
+
+  it('keeps playing when out of moves but shuffles are left', () => {
+    const res = selectTile(nearlyStuck(1), 2, 5, 0)!;
+    expect(isStuck(res.state.tiles, res.state.removed)).toBe(true);
+    expect(res.state.outcome).toBe('playing');
+    expect(res.state.finishedAt).toBeNull();
+    expect(res.cues).not.toContain('lose');
+    expect(res.toast).toBe('No moves left. Shuffle!');
+
+    const shuffled = shuffleRemaining(res.state)!;
+    expect(findHint(shuffled.tiles, shuffled.removed)).not.toBeNull();
+  });
+
+  it('ends the game when out of moves and shuffles', () => {
+    const res = selectTile(nearlyStuck(0), 2, 5, 7)!;
+    expect(res.state.outcome).toBe('stuck');
+    expect(res.state.finishedAt).toBe(7);
+    expect(res.cues).toContain('lose');
+    expect(res.toast).toBeUndefined();
   });
 });

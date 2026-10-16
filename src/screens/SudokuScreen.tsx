@@ -375,18 +375,16 @@ export function SudokuScreen({ mode: navMode }: Props) {
           dayLabel: navMode.kind === 'daily' ? todayISO() : undefined,
         }}
         primaryLabel={navMode.kind === 'daily' ? 'Back to menu' : 'Play again'}
-        onPrimary={() => {
-          finishFlow.hideResult();
-          if (navMode.kind === 'random') startNewGame();
-          else navigation.goBack();
-        }}
+        onPrimary={() =>
+          finishFlow.leaveResult(() => {
+            if (navMode.kind === 'random') startNewGame();
+            else navigation.goBack();
+          })
+        }
         secondaryLabel={navMode.kind === 'random' ? 'Back to menu' : undefined}
         onSecondary={
           navMode.kind === 'random'
-            ? () => {
-                finishFlow.hideResult();
-                navigation.goBack();
-              }
+            ? () => finishFlow.leaveResult(() => navigation.goBack())
             : undefined
         }
       />

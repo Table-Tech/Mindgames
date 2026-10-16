@@ -27,6 +27,7 @@ which is the data controller for the purposes of the EU General Data Protection 
 | Daily score submissions (name, time, game, date) | Daily leaderboards | Google Cloud Firestore | Performance of the service |
 | Purchase information ("Remove ads" status, an anonymous purchase ID) | Unlock and restore your purchase | RevenueCat, Apple App Store / Google Play | Performance of a contract |
 | Settings (theme, sound, haptics, reminder time, game options) | Remember your preferences | Only on your device | Legitimate interest |
+| Usage statistics (screens viewed, games finished with their mode, result, time and score; ads requested, shown and the revenue they earned; whether "Remove ads" was bought), with a random app-instance ID, device model, OS version, app version and approximate country | Understand how the app is used and keep it free with fewer, better-timed ads | Google Analytics for Firebase | Consent (EEA, UK, Switzerland), otherwise legitimate interest |
 
 **Advertising.** The app shows ads through
 Google AdMob. AdMob may collect your device's advertising identifier, IP address and information
@@ -34,6 +35,12 @@ about ad interactions to show and measure ads. In the EEA, UK and Switzerland we
 before personalized ads are shown; on iOS we ask for permission to track through Apple's App
 Tracking Transparency. You can change your choice at any time in **Settings → Privacy choices**. Buying "Remove ads" turns ads off completely. See
 [Google's privacy policy](https://policies.google.com/privacy).
+
+**Analytics.** The app uses Google Analytics for Firebase to measure how the games and ads are used.
+It never receives your leaderboard name or any text you type. In the EEA, UK and Switzerland
+analytics storage stays off until you allow it in the consent form, and follows your choice when you
+change it in **Settings → Privacy choices**. **Settings → Clear all data** also resets the analytics ID
+on your device.
 
 We do **not** sell your personal data, and we don't use it for anything other than the purposes
 above.
@@ -49,6 +56,7 @@ We use these processors, each bound by their own data protection terms:
 
 - **Google Firebase** (Authentication, Cloud Firestore) — Google Ireland Ltd. / Google LLC.
   Data is stored in the European Union (Google Cloud multi-region `eur3`).
+- **Google Analytics for Firebase** — usage statistics.
 - **RevenueCat, Inc.** — purchase management.
 - **Apple** and **Google** — app distribution and payments.
 - **Google AdMob** — advertising.
@@ -61,6 +69,7 @@ European Commission's Standard Contractual Clauses or an adequacy decision.
 - Data on your device stays until you clear it in the app or uninstall the app.
 - Cloud data (save and daily scores) stays until you choose **Settings → Clear all data**, which
   deletes your cloud save, the daily scores submitted from your device, and your anonymous account.
+- Analytics data is kept for the retention period set in Google Analytics (at most 14 months).
 
 ## Your rights
 

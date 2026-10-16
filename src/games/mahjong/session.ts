@@ -84,7 +84,9 @@ export function selectTile(
   removed.add(a.id);
   removed.add(b.id);
   const finishedAll = removed.size === s.tiles.length;
-  const stuck = !finishedAll && isStuck(s.tiles, removed);
+  const noMoves = !finishedAll && isStuck(s.tiles, removed);
+  // Out of moves only ends the game once the shuffles are used up too.
+  const stuck = noMoves && s.shufflesLeft <= 0;
   const cues: FeedbackCue[] = ['correct'];
   if (finishedAll) cues.push('win');
   else if (stuck) cues.push('lose');
@@ -99,6 +101,7 @@ export function selectTile(
     },
     selectedId: null,
     cues,
+    toast: noMoves && !stuck ? 'No moves left. Shuffle!' : undefined,
     matched: true,
   };
 }

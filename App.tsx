@@ -11,7 +11,7 @@ import { EntitlementsProvider } from '@/iap/EntitlementsProvider';
 import { RootNavigator } from '@/navigation/RootNavigator';
 import { ErrorBoundary } from '@/components/ErrorBoundary';
 import { startAds } from '@/ads/admob';
-import { preloadInterstitial } from '@/ads/interstitial';
+import { initInterstitials } from '@/ads/interstitial';
 import { cloudPreferencesSource, startCloudSync } from '@/cloud';
 
 // Keep the native splash up until fonts are ready, so there's no blank frame.
@@ -37,7 +37,8 @@ export default function App() {
     if (!ready) return;
     SplashScreen.hideAsync().catch(() => {});
     // After the UI is visible: consent form (if needed) → ATT → AdMob.
-    startAds().then(preloadInterstitial);
+    initInterstitials();
+    startAds();
   }, [ready]);
 
   // Fall back to system fonts if loading fails rather than blocking the app.

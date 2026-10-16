@@ -26,6 +26,7 @@ import {
 import { deleteCloudData, flushPush, fullSync, getLastSyncedAt } from '@/cloud';
 import { ADS_ENABLED } from '@/ads/config';
 import { showPrivacyOptions, useAdsState } from '@/ads/admob';
+import { resetAnalytics } from '@/analytics/analytics';
 import { clearAll } from '@/storage/storage';
 import { clearRecords } from '@/stats/stats';
 import { clearLeaderboard } from '@/leaderboard/leaderboard';
@@ -92,6 +93,7 @@ export function SettingsScreen() {
               cloudOk = false;
             }
             await clearAll();
+            resetAnalytics();
             resetPrefs();
             Alert.alert(
               'Cleared',

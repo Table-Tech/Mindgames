@@ -1,5 +1,10 @@
 import React from 'react';
-import { NavigationContainer, DefaultTheme, DarkTheme } from '@react-navigation/native';
+import {
+  NavigationContainer,
+  DefaultTheme,
+  DarkTheme,
+  useNavigationContainerRef,
+} from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { useTheme } from '@/theme/ThemeProvider';
 import { HomeScreen } from '@/screens/HomeScreen';
@@ -9,12 +14,21 @@ import { MahjongScreen } from '@/screens/MahjongScreen';
 import { LeaderboardScreen } from '@/screens/LeaderboardScreen';
 import { StatsScreen } from '@/screens/StatsScreen';
 import { SettingsScreen } from '@/screens/SettingsScreen';
+import { trackScreen } from '@/analytics/analytics';
 import type { RootStackParamList } from './types';
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
 
 export function RootNavigator() {
   const { isDark, colors } = useTheme();
+  const navigationRef = useNavigationContainerRef<RootStackParamList>();
+  const lastScreen = React.useRef<string | undefined>(undefined);
+  const onScreenChange = () => {
+    const screen = navigationRef.getCurrentRoute()?.name;
+    if (!screen || screen === lastScreen.current) return;
+    lastScreen.current = screen;
+    trackScreen(screen);
+  };
   const navTheme = {
     ...(isDark ? DarkTheme : DefaultTheme),
     colors: {
@@ -27,7 +41,12 @@ export function RootNavigator() {
     },
   };
   return (
-    <NavigationContainer theme={navTheme}>
+    <NavigationContainer
+      ref={navigationRef}
+      theme={navTheme}
+      onReady={onScreenChange}
+      onStateChange={onScreenChange}
+    >
       {/* Every screen draws its own chunky header, so the native one is hidden. */}
       <Stack.Navigator screenOptions={{ headerShown: false }}>
         <Stack.Screen name="Home" component={HomeScreen} />

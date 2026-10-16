@@ -183,21 +183,16 @@ export function WordleScreen({ mode }: Props) {
           dayLabel: mode.kind === 'daily' ? todayISO() : undefined,
         }}
         primaryLabel={mode.kind === 'daily' ? 'Back to menu' : 'New word'}
-        onPrimary={async () => {
-          finishFlow.hideResult();
-          if (mode.kind === 'random') {
-            await startNewGame();
-          } else {
-            navigation.goBack();
-          }
-        }}
+        onPrimary={() =>
+          finishFlow.leaveResult(() => {
+            if (mode.kind === 'random') startNewGame();
+            else navigation.goBack();
+          })
+        }
         secondaryLabel={mode.kind === 'random' ? 'Back to menu' : undefined}
         onSecondary={
           mode.kind === 'random'
-            ? () => {
-                finishFlow.hideResult();
-                navigation.goBack();
-              }
+            ? () => finishFlow.leaveResult(() => navigation.goBack())
             : undefined
         }
       />

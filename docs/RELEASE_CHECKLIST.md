@@ -98,6 +98,27 @@ Legenda: `[x]` = gedaan · `[ ]` = nog te doen · 👤 = jouw actie/account/besl
 - [ ] 👤 AdMob: app koppelen aan de Play-vermelding zodra die live is
 - [ ] 👤 1.1.0 interne test → productie
 
+### B2. Ad-fixes + analytics (op `feature/ads`)
+**Klaar (code)**
+- [x] Ads starten opnieuw na een mislukte start (offline / consent onbereikbaar) en na "Privacy choices"
+- [x] Interstitial: teller reset pas als de ad echt getoond is, herladen met backoff na een fout, verlopen ads (>55 min) vervangen, timeout als de ad niet opent
+- [x] Interstitial komt nu bij het **verlaten van het resultaatscherm** (natuurlijke pauze), niet meer midden in de laatste zet; stats/streak worden eerst opgeslagen
+- [x] Banner probeert het opnieuw na "geen ad" en verschijnt niet zolang de aankoopstatus nog laadt
+- [x] Productie-build stopt als `EXPO_PUBLIC_ADMOB_BANNER_*` / `_INTERSTITIAL_*` ontbreken
+- [x] Mahjong: geen game over meer als er nog shuffles over zijn
+- [x] **Google Analytics for Firebase** (Android + iOS), Consent Mode v2 gekoppeld aan het UMP-formulier (`firebase.json`: standaard alles geweigerd); events `game_end`, `ad_request`, `ad_loaded`, `ad_failed`, `ad_opportunity`, `ad_shown`, `ad_closed`, `ad_paid` (impressie-omzet), `remove_ads_purchase`, `remove_ads_restore`, schermweergaven en user property `ads_removed`. "Clear all data" reset ook het analytics-ID
+- [x] Privacybeleid aangevuld met Analytics
+
+**Nog te doen**
+- [ ] 👤 Firebase-console → Project settings → **Integrations → Google Analytics inschakelen** (als dat nog niet aan staat); daarna `google-services.json` en `GoogleService-Info.plist` opnieuw downloaden en in EAS/lokaal vervangen
+- [ ] 👤 AdMob → Instellingen → **Impressieniveau-advertentieopbrengst** aanzetten (anders komt er geen `ad_paid`)
+- [ ] 👤 AdMob → app → **Koppelen aan Firebase** (geeft AdMob-omzet in de Firebase/GA-rapporten)
+- [ ] 👤 Nieuwe **native build** nodig (nieuwe native module); niet via een OTA-update
+- [ ] 👤 Testen met Firebase **DebugView**: Android `adb shell setprop debug.firebase.analytics.app com.puzzaro.tabletech`, iOS launch-argument `-FIRDebugEnabled`
+- [ ] 👤 Play Console → **Data safety** bijwerken: App-activiteit (app-interacties), App-info en prestaties (diagnostiek), Apparaat-ID's ook voor **analyse**; gedeeld met Google (Analytics)
+- [ ] 👤 Apple (later): App Privacy-labels voor Analytics (Usage Data, Diagnostics; niet gekoppeld aan identiteit)
+- [ ] 🟡 Visueel controleren: is er genoeg ruimte tussen de banner en het Word Guess-toetsenbord / Sudoku-cijferpad (per-ongeluk-klikken)?
+
 ### C. Apple App Store (later) 🟠
 - [ ] 👤 Apple Developer Program (€99/jaar), app in App Store Connect (`com.puzzaro.tabletech`)
 - [ ] 👤 AdMob iOS-app + ad units → `ADMOB_IOS_APP_ID`, `EXPO_PUBLIC_ADMOB_*_IOS`; RevenueCat iOS-app → `EXPO_PUBLIC_REVENUECAT_IOS`
@@ -116,7 +137,8 @@ Legenda: `[x]` = gedaan · `[ ]` = nog te doen · 👤 = jouw actie/account/besl
 
 ### E. Na de launch 🟢
 - [x] `SHARE_URL` = Play Store-link (in 1.1.0); deelkaart toont "Get it free on Google Play"
-- [ ] Analytics (met toestemming), Nederlandse vertaling, EAS Update (OTA), reviewprompt, meer spellen, achievements
+- [x] Analytics (met toestemming), zie B2
+- [ ] Nederlandse vertaling, EAS Update (OTA), reviewprompt, meer spellen, achievements
 
 ---
 

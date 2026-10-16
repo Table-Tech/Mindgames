@@ -7,6 +7,7 @@ import Purchases, {
   CustomerInfoUpdateListener,
 } from 'react-native-purchases';
 import { getJSON, setJSON } from '@/storage/storage';
+import { setUserProperty, track } from '@/analytics/analytics';
 
 // RevenueCat-backed entitlements provider.
 //
@@ -142,6 +143,11 @@ export function EntitlementsProvider({ children }: { children: React.ReactNode }
   const [purchasing, setPurchasing] = useState(false);
   const [restoring, setRestoring] = useState(false);
 
+  // Lets analytics split players with and without ads.
+  useEffect(() => {
+    if (!loading) setUserProperty('ads_removed', adsRemoved ? 'true' : 'false');
+  }, [adsRemoved, loading]);
+
   useEffect(() => {
     (async () => {
       try {
@@ -173,6 +179,9 @@ export function EntitlementsProvider({ children }: { children: React.ReactNode }
     try {
       const r = await purchaseProduct();
       if (r.ok) setAdsRemoved(r.adsRemoved);
+      track('remove_ads_purchase', {
+        result: r.ok ? 'success' : r.cancelled ? 'cancelled' : 'error',
+      });
       return { ok: r.ok, cancelled: r.cancelled, error: r.error };
     } finally {
       setPurchasing(false);
@@ -184,6 +193,9 @@ export function EntitlementsProvider({ children }: { children: React.ReactNode }
     try {
       const r = await restore();
       if (r.ok) setAdsRemoved(r.adsRemoved);
+      track('remove_ads_restore', {
+        result: !r.ok ? 'error' : r.adsRemoved ? 'restored' : 'nothing',
+      });
       return { ok: r.ok, error: r.error };
     } finally {
       setRestoring(false);
